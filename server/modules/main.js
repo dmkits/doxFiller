@@ -4,45 +4,23 @@ module.exports.validateModule = function(errs, nextValidateModuleCallback){
     nextValidateModuleCallback();
 };
 
-function setUserRoleMenu(outData, userRole, usersRolesConfig, appMenu){
-    var userMenu=[];
-    var userRoleItems=usersRolesConfig[userRole];
-    if (!userRoleItems&&userRole=="sysadmin") {
-        outData.menuBar= appMenu;
-        return;
-    }
-    if (!userRoleItems) userRoleItems={menu:["menuBarItemHelpAbout","menuBarItemClose"]};
-    var userRoleMenu=userRoleItems.menu;
-    for(var i in userRoleMenu) {
-        var userRoleMenuItemName = userRoleMenu[i];
-        for (var j in appMenu) {
-            var appMenuItem = appMenu[j];
-            if (userRoleMenuItemName == appMenuItem.menuItemName) {
-                var userItem = {};
-                for(var item in appMenuItem) userItem[item]=appMenuItem[item];
-                if(userItem.popupMenu) userItem.popupMenu=null;
-                userMenu.push(userItem);
-                break;
-            }
-            var mainPopupMenu = appMenuItem.popupMenu;
-            if (mainPopupMenu){
-                for (var k in mainPopupMenu) {
-                    var popupMenuItem = mainPopupMenu[k];
-                    if (userRoleMenuItemName == popupMenuItem.menuItemName) {
-                        for (var l in userMenu) {
-                            var userMenuItem = userMenu[l];
-                            if (userMenuItem.menuItemName == appMenuItem.menuItemName) {
-                                if (!userMenuItem.popupMenu) userMenuItem.popupMenu= [];
-                                userMenuItem.popupMenu.push(popupMenuItem);
-                            }
-                        }
-                    }
-                }
-            }
+function getMenu(templates){
+    var menuBar=[];
+    if (!templates) return;
+    for(var tID in templates) {
+        var t=templates[tID], menuBarItem={menuItemName:tID};
+        if(t) {
+            menuBarItem.menuTitle= t["title"];
+            menuBarItem.pageId= "page_"+tID;
+            menuBarItem.pageTitle= t["title"];
+            menuBarItem.action= "open";
+            menuBarItem.contentHref = "/docxTemplates/"+tID;
         }
+        menuBar.push(menuBarItem);
     }
-    outData.menuBar= userMenu;
-    outData.autorun= userRoleItems.autorun;
+    menuBar.push({ menuItemName:"menuBarItemHelpAbout", menuTitle:"О программе", action:"help_about" });
+    menuBar.push({ menuItemName:"menuBarItemClose", menuTitle:"Выход", action:"close" });
+    return menuBar;
 }
 
 module.exports.modulePageURL = "/";
@@ -53,8 +31,6 @@ module.exports.init= function(app){
         var outData= {};
         outData.mode= appParams.mode;
         outData.modeStr= appParams.mode;
-        outData.dbUserName=(req.dbUserName)?req.dbUserName:"unknown";
-        outData.EmpName=(req.dbUserParams&&req.dbUserParams["EmpName"])?req.dbUserParams["EmpName"]:"unknown";
         if (!appConfig||appConfig.error) {
             outData.error= "Failed load application configuration!"+(appConfig&&appConfig.error)?" Reason:"+appConfig.error:"";
             res.send(outData);
@@ -64,15 +40,7 @@ module.exports.init= function(app){
         outData.icon32x32=appConfig.icon32x32;
         outData.imageSmall=appConfig.imageSmall;
         outData.imageMain=appConfig.imageMain;
-        var empRole=(req.dbUserParams)?req.dbUserParams["EmpRole"]:null;
-        setUserRoleMenu(outData, empRole, appConfig.usersRoles, appConfig.appMenu);
-        //var dbConErr=database.getDBConnectError();
-        //if (dbConErr) {
-        //    outData.dbConnection= dbConErr;
-        //    res.send(outData);
-        //    return;
-        //}
-        //outData.dbConnection='Connected';
+        outData.menuBar= getMenu(appConfig.templates);
         res.send(outData);
     });
     app.post("/main/exit", function(req, res){                                                                   log.info("app.post /  req.body=",req.body);

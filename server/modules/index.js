@@ -72,26 +72,4 @@ module.exports.init = function(app,errs){
         }
         loadedModules[moduleName]= module;
     }
-    fillMainMenuModuleData(server.getConfigAppMenu());
 };
-
-function fillMainMenuItemModuleData(menuItem){
-    if (!menuItem.module) return;
-    var moduleName=menuItem.module;
-    if (!loadedModules[moduleName]) return;
-    menuItem.pageId= moduleName;
-    menuItem.action= "open";
-    menuItem.contentHref = loadedModules[moduleName].modulePageURL;
-}
-function fillMainMenuModuleData(appMenu){
-    for(var mainMenuItemIndex in appMenu) {
-        var mainMenuItem= appMenu[mainMenuItemIndex];
-        fillMainMenuItemModuleData(mainMenuItem);
-        if (mainMenuItem.popupMenu){
-            for(var popupMenuItemIndex in mainMenuItem.popupMenu) {
-                var popupMenuItem= mainMenuItem.popupMenu[popupMenuItemIndex];
-                fillMainMenuItemModuleData(popupMenuItem)
-            }
-        }
-    }
-}

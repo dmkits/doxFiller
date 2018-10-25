@@ -1,0 +1,133 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+<div id="docxTemplates_PageContainer" style="width:100%;height:100%;">
+    <!--<div id="docxTemplates_ContentPaneLeft" style="width:165px;height:100%; margin:0;padding:0;">-->
+        <!--<table>-->
+            <!--<tr><th>Отчеты</th></tr>-->
+            <!--<tr><td>-->
+                <!--<button id="docxTemplates_btnProdsRems">Остатки товаров</button>-->
+                <!--<button id="docxTemplates_btnProdsMoves">Движение товаров</button>-->
+            <!--</td></tr>-->
+        <!--</table>-->
+    <!--</div>-->
+    <div id="docxTemplates_ContentPaneDetailContainer" style="width:100%;height:100%; margin:0;padding:0;">
+        <table id="docxTemplatesParameters" class="docxTemplateParameters">
+            <tr>
+                <th height="30px"><b>Название параметра:</b></th>
+                <th height="30px"><b>Значение параметра:</b></th>
+            </tr>
+        </table>
+    </div>
+</div>
+</body>
+<script type="text/javascript">
+    require(["app/app", "dojo/dom-style", "dijit/layout/BorderContainer", "dijit/layout/StackContainer", "dijit/layout/ContentPane",
+                "dijit/form/Button", "dijit/form/TextBox", "app/request", "app/tDocSimpleTable"],
+            function (APP, domStyle, BorderContainer, StackContainer, ContentPane, Button, TextBox, Request, TDocSimpleTable) {
+                var pageContainer= APP.instanceForID("docxTemplates_PageContainer", BorderContainer, {});
+                var contentPaneDetail= APP.instanceForID("docxTemplates_ContentPaneDetailContainer", ContentPane, {region:'center'});
+                var pageID="docxTemplates_";
+                contentPaneDetail.textBoxes={};
+                contentPaneDetail.setTemplateFields = function(postaction){//getting main json data from server and run action parameter function
+                    Request.getJSONData({url:"/docxTemplates/"+pageID+"/getFields", consoleLog:true},
+                            function(result){                                                       console.log(pageID+".getFields result=",result); //title,icon32x32,imageSmall,imageMain
+                                if(result===undefined||result==null) result = [];
+                                if(!result.fields) return;
+                                var tr,td,div, label,input,textBox, button;
+                                var table= contentPaneDetail.domNode.getElementsByTagName("table")[0];
+                                for(var tID in result.fields){
+                                    var tTitle=result.fields[tID];
+                                    table.appendChild(tr=document.createElement("tr"));
+                                    tr.appendChild(td=document.createElement("td"));
+                                    td.appendChild(div=document.createElement("div"));td.setAttribute("style","text-align:right");
+                                    div.appendChild(label=document.createElement("label"));
+                                    label.setAttribute("for",tID);label.innerHTML=tTitle;
+                                    tr.appendChild(td=document.createElement("td"));
+                                    td.appendChild(div=document.createElement("div"));
+                                    div.appendChild(input=document.createElement("input"));
+                                    input.setAttribute("id",tID);
+                                    textBox=new TextBox({id:tID,style:"width:300px;"},tID);
+                                    contentPaneDetail.textBoxes[tID]=textBox;
+                                }
+                                table.appendChild(tr=document.createElement("tr"));
+                                tr.appendChild(document.createElement("td"));
+                                tr.appendChild(td=document.createElement("td"));
+                                td.appendChild(div=document.createElement("div"));
+                                div.appendChild(button=document.createElement("button"));
+                                button.setAttribute("id","btnSendDataAndGenDocx");button.innerText="Сгенерировать документы";
+                                button=new Button({id:"btnSendDataAndGenDocx",style:"width:300px;"},"btnSendDataAndGenDocx");
+                                button.onClick=function(){
+                                    var sendingData={};
+                                    for(var tID in contentPaneDetail.textBoxes){
+                                        sendingData[tID]=contentPaneDetail.textBoxes[tID].get("value");
+                                    }
+                                    Request.postJSONData({url:"/docxTemplates/"+pageID+"/sendDataAndGenDocx", data:sendingData, consoleLog:true},
+                                            function(result){
+
+                                            });
+                                    };
+
+//                                main_MainContainer.mainContentData = result;
+//                                main_ContentContainer.mainData=result;
+//                                var eConfigName = document.getElementById("main_configName");
+//                                if(result.title)document.title=result.title;
+//                                if(result.icon32x32) changeFavicon(result.icon32x32);
+//                                if(result.imageSmall)main_TopImg.set("style","background-image: url(\""+result.imageSmall+"\")");
+//                                if(result.mode && result.mode.indexOf("production")<0) {
+//                                    var mode_str = result.mode_str;
+//                                    if (!mode_str) mode_str= result.mode;
+//                                    if (mode_str.toLocaleLowerCase().indexOf("test")>=0) eConfigName.innerHTML="<b style='color:red'>"+mode_str+"</b>";
+//                                    else eConfigName.innerHTML="<b>"+mode_str+"</b>";
+//                                } else if (!result.mode) eConfigName.innerHTML= eConfigName.innerHTML+"<b>UNKNOWN MODE!!!</b>";
+//                                if(postaction)postaction();
+                            });
+                };
+                contentPaneDetail.setTemplateFields();
+//                APP.instanceForID("docxTemplates_ContentPaneLeft", ContentPane, {region:'left', splitter:true});
+//                var btnProdsRems= APP.instanceForID("docxTemplates_btnProdsRems", Button, {},{"width":"150px"});
+//                var btnProdsMoves= APP.instanceForID("docxTemplates_btnProdsMoves", Button, {},{"width":"150px"});
+//                var contentPaneDetailContainer= APP.instanceForID("docxTemplates_ContentPaneDetailContainer", StackContainer, {region:'center'});
+//                btnProdsRems.onClick= function(){
+//                    if (!btnProdsRems.report){
+//                        btnProdsRems.report = APP.childFor(contentPaneDetailContainer, "docxTemplates_tableProdsRems",
+//                                TDocSimpleTable, {titleText:"Текущие остатки товаров", dataURL:"/reports/prodsRems/getProductsRems",
+//                                    buttonPrint:false, buttonExportToExcel:false})
+//                                .addSelectBox("Склад",{valueItemName:"StockID", labelItemName:"StockName",
+//                                    loadDropDownURL:"/reports/cashier/getDirStocksForSelect",
+//                                    contentTableCondition:"StockID="/*, width:300*/})
+//                                .addCheckBtnCondition("Не нулевые",{width:90,contentTableConditions:{"SUM(Qty)<>":"0"}})
+//                                .addCheckBtnCondition("Все",{width:85})
+//                                .addCheckBtnCondition("Нулевые",{width:70,contentTableConditions:{"SUM(Qty)~":"0"}})
+//                                .addTotalCountNumberBox("ИТОГО строк:", 140)
+//                                .addTotalSumNumberTextBox("ИТОГО остаток:", 1160, "TQty", {style:"font-weight:bold;"})
+//                                .startUp();
+//                    }
+//                    contentPaneDetailContainer.selectChild(btnProdsRems.report);
+//                };
+//                btnProdsMoves.onClick= function(){
+//                    if (!btnProdsMoves.report){
+//                        btnProdsMoves.report = APP.childFor(contentPaneDetailContainer, "docxTemplates_tableProdsMoves",
+//                                TDocSimpleTable, {titleText:"Движение товаров", dataURL:"/reports/prodsRems/getProductsMoves",
+//                                    buttonPrint:false, buttonExportToExcel:false})
+//                                .addSelectBox("Склад",{valueItemName:"StockID", labelItemName:"StockName",
+//                                    loadDropDownURL:"/reports/cashier/getDirStocksForSelect",
+//                                    contentTableCondition:"StockID="/*, width:300*/})
+//                                .addHeaderDateBox("с",{contentTableParam:"@BDate"})
+//                                .addHeaderDateBox("по",{contentTableParam:"@EDate"})
+//                                .addTotalCountNumberBox("ИТОГО строк:", 140)
+//                                .addTotalSumNumberTextBox("ИТОГО остаток:", 895, "TQty", {style:"font-weight:bold;"})
+//                                .startUp();
+//                    }
+//                    contentPaneDetailContainer.selectChild(btnProdsMoves.report);
+//                };
+                pageContainer.layout();
+//                btnProdsRems.onClick();
+//                btnProdsMoves.onClick();
+        });
+</script>
+</html>

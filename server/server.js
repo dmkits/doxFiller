@@ -81,8 +81,8 @@ module.exports.setAppConfig= function(newAppConfig){ serverConfig=newAppConfig; 
 var configFileName=(serverConfig&&serverConfig.configName)?serverConfig.configName:'config.json';
 var config=JSON.parse(common.getJSONWithoutComments(fs.readFileSync('./'+configFileName,'utf-8')));
 module.exports.getConfig=function(){ return config; };
-module.exports.getConfigAppMenu=function(){ return (config&&config.appMenu)?config.appMenu:null; };
 module.exports.getConfigModules=function(){ return (config&&config.modules)?config.modules:null; };
+module.exports.getConfigTemplates=function(){ return (config&&config.templates)?config.templates:null; };
 
 server.use(function (req, res, next) {
     next();

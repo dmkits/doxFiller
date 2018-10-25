@@ -1,0 +1,11 @@
+.docxTemplateParameters{
+    font-size : 12px; !important;
+
+}
+.docxTemplateParameters div{
+    margin:1px 1px 1px 1px; !important;
+}
+.docxTemplateParameters input{
+    width:300px; !important;
+    font-size : 12px; !important;
+}

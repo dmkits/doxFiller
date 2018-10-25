@@ -32,8 +32,7 @@
     <link rel="stylesheet" href="/css/htable.css" media="screen">
     <link rel="stylesheet" type="text/css" href="/css/main.css" media="screen">
     <link rel="stylesheet" type="text/css" href="/css/contentController.css" media="screen">
-    <script type="text/javascript" src="/jslib/jsBarcode/JsBarcode.ean-upc.min.js"></script>
-    <!--<title>MODA.GS.UA</title>-->
+    <link rel="stylesheet" type="text/css" href="/css/docxTemplates.css" media="screen">
 </head>
 <body class="claro">
     <div id="main_MainContainer">
@@ -42,8 +41,6 @@
             <div id="main_MainMenu"></div>
             <div id="main_TopInfoPane">
                 <div id="main_configName"  style="display:inline;margin-left:10px;"></div>
-                <div id="main_dbUsername" style="display:inline;margin-left:10px;"></div>
-                <div id="main_dbEmpName" style="display:inline;margin-left:10px;"></div>
             </div>
         </div>
         <div id="main_ContentContainer"></div>
@@ -82,8 +79,6 @@
                                     if (mode_str.toLocaleLowerCase().indexOf("test")>=0) eConfigName.innerHTML="<b style='color:red'>"+mode_str+"</b>";
                                     else eConfigName.innerHTML="<b>"+mode_str+"</b>";
                                 } else if (!result.mode) eConfigName.innerHTML= eConfigName.innerHTML+"<b>UNKNOWN MODE!!!</b>";
-                                if(result.dbUserName) document.getElementById("main_dbUsername").innerHTML =  "<b>"+result.dbUserName+"</b>";
-                                if(result.EmpName) document.getElementById("main_dbEmpName").innerHTML =  "<b>"+result.EmpName+"</b>";
                                 if(postaction)postaction();
                             });
                 };

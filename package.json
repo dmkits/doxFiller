@@ -6,13 +6,15 @@
     "start": "./server/server.js"
   },
   "dependencies": {
-    "path": "^0.12.7",
-    "fs": "~0.0.1",
-    "dateformat": "^2.0.0",
-    "winston": "^2.3.1",
-    "winston-daily-rotate-file": "^1.7.2",
-    "express": "~4.14.0",
     "body-parser": "~1.16.1",
-    "cookie-parser": "~1.4.3"
+    "cookie-parser": "~1.4.3",
+    "dateformat": "^2.0.0",
+    "docxtemplater": "^3.9.1",
+    "express": "~4.14.0",
+    "fs": "~0.0.1",
+    "jszip": "^2.6.1",
+    "path": "^0.12.7",
+    "winston": "^2.3.1",
+    "winston-daily-rotate-file": "^1.7.2"
   }
 }
