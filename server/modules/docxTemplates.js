@@ -26,19 +26,58 @@ module.exports.init= function(app) {
             });
             return
         }
-        if(action=="getFields"){
+        if(action=="getTemplateData"){
             var tmpls=server.getConfigTemplates(), tmplData, tFields;
             if(tmpls)tmplData=tmpls[tID];
             if(!tmplData){
-                res.send({error:"NO finded template data by template ID!"});
+                res.send({error:"NO finded template data by template ID!",errorMsg:"Нет заданы параметры для шаблона!"});
                 return;
             }
             tFields=tmplData.fields;
             if(!tFields){
-                res.send({error:"Template data no fields!"});
+                res.send({error:"Template data no fields!",errorMsg:"Для шаблона не заданы поля параметров!"});
                 return;
             }
-            res.send({fields:tFields});
+            var tFieldsParams={};
+            for(var tfID in tFields){
+                tFieldsParams[tfID]=tfID+" "+tFields[tfID];
+            }
+            res.send({fields:tFieldsParams});
+            return;
+        }else if(action=="getTemplateParamsHistory"){
+            var tmpls=server.getConfigTemplates(), tmplData, tFields;
+            if(tmpls)tmplData=tmpls[tID];
+            if(!tmplData){
+                res.send({error:"NO finded template data by template ID!",errorMsg:"Нет заданы параметры для шаблона!"});
+                return;
+            }
+            tFields=tmplData.fields;
+            if(!tFields){
+                res.send({error:"Template data no fields!",errorMsg:"Для шаблона не заданы поля параметров!"});
+                return;
+            }
+            var tTableParamsHistory=[
+                {data:"LogDatetime", name:"Дата", width:100, type:"text",datetimeFormat:"DD.MM.YY HH:mm:ss",align:"center" }
+                //{data: "ChID", name: "ChID", width: 85, type: "text", readOnly:true, visible:false },
+                //{data: "DocID", name: "Номер", width: 85, type: "text", align:"right" },
+                //{data: "IntDocID", name: "Вн. номер", width: 85, type: "text", align:"right" },
+                //{data: "KursCC", name: "Курс ВС", width: 65, type: "numeric", visible:false },
+                //{data: "TQty", name: "Кол-во", width: 75, type: "numeric" },
+                //{data: "TSumCC_wt", name: "Сумма", width: 85, type: "numeric" },
+                //{data: "StateCode", name: "StateCode", width: 50, type: "text", readOnly:true, visible:false },
+                //{data: "StateName", name: "Статус", width: 250, type: "text" }
+            ];
+            for(var tfID in tFields){
+                tTableParamsHistory.push({data:tfID, name:tfID, width:250, type:"text"});
+            }
+            //var conditions={};
+            //for(var condItem in req.query) conditions["t_Rec."+condItem]=req.query[condItem];
+            res.send({columns:tTableParamsHistory,identifier:tTableParamsHistory[0].data,items:[]});
+            //t_Rec.getDataForTable(req.dbUC,{tableColumns:tRecsListTableColumns, identifier:tRecsListTableColumns[0].data,
+            //        conditions:conditions, order:"DocDate, DocID"},
+            //    function(result){
+            //        res.send(result);
+            //    });
             return;
         }
         res.send({error:"UNKNOWN URI action!"});
@@ -53,20 +92,28 @@ module.exports.init= function(app) {
             res.send({error:"UNKNOWN URI!"});
             return;
         }
-        var tmpls=server.getConfigTemplates(), tmplData, tFields;
-        if(tmpls)tmplData=tmpls[tID];
-        if(!tmplData){
-            res.send({error:"NO finded template data by template ID!"});
+        if(!action){
+            res.send({error:"NO URI action!"});
             return;
         }
-        if(!tmplData.outputPath||!tmplData.outputName){
-            res.send({error:"NO path or/and name for store template docx!"});
-            return;
-        }
+        if(action=="sendDataAndGenDocx"){
+            var tmpls=server.getConfigTemplates(), tmplData, tFields;
+            if(tmpls)tmplData=tmpls[tID];
+            if(!tmplData){
+                res.send({error:"NO finded template data by template ID!",errorMsg:"Нет заданы параметры для шаблона!"});
+                return;
+            }
+            if(!tmplData.outputPath||!tmplData.outputName){
+                res.send({error:"NO path or/and name for store template docx!",errorMsg:"Для шаблона не заданы параметры сохранения результата!"});
+                return;
+            }
 
-        generateDOCX(tID,req.body,tmplData.outputPath,tmplData.outputName,function(result){
-            res.send(result);
-        });
+            generateDOCX(tID,req.body,tmplData.outputPath,tmplData.outputName,function(result){
+                res.send(result);
+            });
+            return;
+        }
+        res.send({error:"UNKNOWN URI action!"});
     });
 };
 
@@ -75,7 +122,6 @@ function generateDOCX(tID,data,outputPath,outputName,callback){
         callback({error:"No data for generate docx!",errorMsg:"Нет данных для создания документа по шаблону!"});
         return;
     }
-
     var content;
     try {//Load the docx file as a binary
         content = fs.readFileSync(path.resolve(appDocxTemplates, tID+'.docx'), 'binary');
@@ -90,12 +136,7 @@ function generateDOCX(tID,data,outputPath,outputName,callback){
     try {// render the document (replace all occurences of {first_name} by John, {last_name} by Doe, ...)
         doc.render()
     } catch (error) {
-        var e = {
-            message: error.message,
-            name: error.name,
-            stack: error.stack,
-            properties: error.properties
-        };                                                                                              //console.log("generateDOCX error:",JSON.stringify({error: e}));
+        var e = { message: error.message, name: error.name, stack: error.stack, properties: error.properties};  //console.log("generateDOCX error:",JSON.stringify({error: e}));
         callback({error:"Failed replace all occurences in template! Reason:"+error.message,
             errorMsg:"Не удалось обработать файл шаблона!"});
         return;

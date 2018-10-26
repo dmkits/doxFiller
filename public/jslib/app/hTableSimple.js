@@ -2,7 +2,7 @@
  * Created by dmkits on 20.04.16.
  * Refactor by dmkits 15.02.17.
  */
-Handsontable.cellTypes['text'].editor.prototype.setValue = function(value) {                                //console.log("Handsontable.cellTypes['text'].editor.prototype.setValue ",value);
+Handsontable.cellTypes['text'].editor.prototype.setValue = function(value) {                                            //console.log("Handsontable.cellTypes['text'].editor.prototype.setValue ",value);
     var cellPropFormat = this.cellProperties["format"];
     if (this.cellProperties["type"]=="numeric"&&cellPropFormat&&cellPropFormat.indexOf('%')>=0){
         var val = ''; if(value) val = Math.round(value.replace(',','.')*100)+'%'; this.TEXTAREA.value= val;
@@ -87,17 +87,7 @@ define(["dojo/_base/declare", "dijit/layout/ContentPane","dojox/widget/Standby",
             setData: function(data) {
                 if (!data) { data={ identifier:null, columns:[], items:[], error:null }; }
                 if(data.error) { this.htDataError=data.error; } else this.htDataError=null;
-                this.handsonTable.rowIDNames={};
-                if(data.identifier) {
-                    this.handsonTable.rowIDName=data.identifier;
-                    this.handsonTable.rowIDNames[data.identifier]=0;
-                }
-                if(data.columns){
-                    for(var c in data.columns){
-                        var colData=data.columns[c];
-                        if(colData.identifier) this.handsonTable.rowIDNames[colData.data]=c;
-                    }
-                }
+                if(data.identifier) { this.handsonTable.rowIDName=data.identifier; }
                 this.setDataColumns(data.columns);
                 if(!data.items) {
                     this.htData = [];
@@ -111,10 +101,7 @@ define(["dojo/_base/declare", "dijit/layout/ContentPane","dojox/widget/Standby",
             getRowIDName: function(){
                 return this.handsonTable.rowIDName;
             },
-            getRowIDNames: function(){
-                return this.handsonTable.rowIDNames;
-            },
-            getColumns: function(){                                                                         //console.log("HTableSimple getColumns ",this.htColumns);
+            getColumns: function(){                                                                                         //console.log("HTableSimple getColumns ",this.htColumns);
                 return this.htColumns;
             },
             getDataError: function(){
@@ -147,17 +134,16 @@ define(["dojo/_base/declare", "dijit/layout/ContentPane","dojox/widget/Standby",
                     allowInsertRow:false,
                     fillHandle: { autoInsertRow: false, direction: 'vertical' },//it's for use fillHandle in childrens
                     startRows: 1,
-                        fixedColumnsLeft: 0, fixedRowsTop: 0,
+                    fixedColumnsLeft: 0, fixedRowsTop: 0,
                     manualColumnResize: true, manualRowResize: false,
-                        manualColumnMove: true,
                     persistentState: parent.persistentState,
                     readOnly: parent.readOnly,
-                    wordWrap: parent.wordWrap, trimWhitespace:false,
+                    wordWrap: parent.wordWrap,
                     enterMoves:{row:0,col:1}, tabMoves:{row:0,col:1},
                     multiSelect: true,
-                    //beforeOnCellMouseDown: function(event, coords, element) {
-                    //    if(element.tagName==="TH") { event.stopImmediatePropagation(); }//disable column header click event
-                    //},
+                    beforeOnCellMouseDown: function(event, coords, element) {
+                        if(element.tagName==="TH") { event.stopImmediatePropagation(); }//disable column header click event
+                    },
                     cellValueRenderer:function (instance, td, row, col, prop, value, cellProperties) {
                         if(cellProperties["html"]){
                             Handsontable.renderers.HtmlRenderer.apply(this, arguments);
@@ -165,7 +151,7 @@ define(["dojo/_base/declare", "dijit/layout/ContentPane","dojox/widget/Standby",
                             Handsontable.cellTypes[cellProperties.type].renderer.apply(this, arguments);
                             if (cellProperties["type"]==="text"&&cellProperties["datetimeFormat"]){
                                 if(value!==null&&value!==undefined)
-                                    td.innerHTML= moment.parseZone(new Date(value) /*value,"YYYY-MM-DD"*/).utc().format(cellProperties["datetimeFormat"]);
+                                    td.innerHTML= moment(new Date(value) /*value,"YYYY-MM-DD"*/).format(cellProperties["datetimeFormat"]);
                                 else td.innerHTML="";
                             }
                             if (cellProperties["align"]){
@@ -185,10 +171,10 @@ define(["dojo/_base/declare", "dijit/layout/ContentPane","dojox/widget/Standby",
                         if (data) data[this.htDataSelectedProp]= true;
                         if (olddata && olddata!==data) olddata[this.htDataSelectedProp]= false;
                     },
-                    /*beforeSetRangeStart: function(coords){                                                console.log("HTableSimple beforeSetRangeStart coords=",coords);
+                    /*beforeSetRangeStart: function(coords){                                                                console.log("HTableSimple beforeSetRangeStart coords=",coords);
 
                      },*/
-                    /*beforeSetRangeEnd: function(coords){                                                  console.log("HTableSimple beforeSetRangeEnd coords=",coords);
+                    /*beforeSetRangeEnd: function(coords){                                                                  console.log("HTableSimple beforeSetRangeEnd coords=",coords);
 
                      },*/
                     afterSelectionEnd: function(r,c,r2,c2) {
@@ -198,7 +184,7 @@ define(["dojo/_base/declare", "dijit/layout/ContentPane","dojox/widget/Standby",
                         else {
                             firstItem=r2;
                             for (var ri = r2; ri <= r; ri++) selection[ri] = this.getContentRow(ri);
-                        }                                                                                   console.log("HTableSimple afterSelectionEnd selection1=",selection[firstItem]);
+                        }
                         parent.onSelect(selection[firstItem], selection);
                     }
                 });
@@ -231,153 +217,82 @@ define(["dojo/_base/declare", "dijit/layout/ContentPane","dojox/widget/Standby",
                 if (addingHeaderElements) this.tableHeaderAddedElements=addingHeaderElements;
                 var hInstance= this.getHandsonTable();
                 hInstance.updateSettings({
-                    beforeRender: function () {                                                                  //console.log("HTableSimple beforeRender1 ",hInstance.rootElement);
-                        var theads=[];
-                        var htMasterDIVs=this.rootElement.getElementsByClassName('ht_master handsontable');
-                        if(htMasterDIVs) {
-                            var htMasterDIV=htMasterDIVs[0], htMasterDIVtheads;
-                            if(htMasterDIV) htMasterDIVtheads=htMasterDIV.getElementsByTagName('thead');
-                            if(htMasterDIVtheads) theads.push(htMasterDIVtheads[0]);
-                        }
-                        var htCloneTopDIVs=this.rootElement.getElementsByClassName('ht_clone_top handsontable');
-                        if(htCloneTopDIVs) {
-                            var htCloneTopDIV=htCloneTopDIVs[0], htCloneTopDIVtheads;
-                            if(htCloneTopDIV) htCloneTopDIVtheads=htCloneTopDIV.getElementsByTagName('thead');
-                            if(htCloneTopDIVtheads) theads.push(htCloneTopDIVtheads[0]);
-                        }
+                    columnHeaderHeight:20,
+                    afterRender: function () {     // console.log("*****************hInstance=",hInstance); console.log("*********Handsontable.Dom=",Handsontable.Dom);   console.log("rootElement=",hInstance.rootElement);
+
+                       ////---
+                       // var topHeadersArr=document.getElementsByClassName("ht_clone_top handsontable");
+                       // var contentPaneWidth=hInstance.rootElement.parentNode.style.width;
+                       // for(var k=0; k<topHeadersArr.length; k++){
+                       //     var headerTop = topHeadersArr[k];
+                       //     var bottomClone=headerTop.cloneNode(true);
+                       //     bottomClone.className = "ht_clone_bottom handsontable";
+                       //     if(headerTop.style.top)bottomClone.style.top=null;
+                       //     if(headerTop.style.height)bottomClone.style.height='23px';
+                       //     if(headerTop.style.left)bottomClone.style.left='0px';
+                       //     if(headerTop.getElementsByClassName("wtSpreader")[0].style.left){
+                       //         bottomClone.getElementsByClassName("wtSpreader")[0].style.left='0px';    // TODO fix when scroll is work !!!!!!!!!!!!!
+                       //     }
+                       //     if(headerTop.getElementsByClassName("wtHider")[0].style.width){
+                       //         var hotWidth=headerTop.getElementsByClassName("wtHider")[0].style.width;
+                       //         if(parseInt(contentPaneWidth.replace('px',""))<parseInt(hotWidth.replace('px',""))){
+                       //             bottomClone.style.bottom='15px';
+                       //         }else bottomClone.style.bottom='0px';
+                       //     }
+                       //     var thArr=bottomClone.getElementsByTagName("TH");
+                       //     var firstTh=thArr[0];
+                       //     //var TBODY=bottomClone.getElementsByTagName("TBODY")[0];
+                       //     //var trTbody = document.createElement('tr');
+                       //     //TBODY.appendChild(trTbody);
+                       //     if(firstTh){
+                       //         firstTh.removeAttribute("colSpan");
+                       //         for(var h in thArr) {
+                       //             thArr[h].innerHTML="";
+                       //             thArr[h].border="5px";
+                       //             //var tdTbody = document.createElement('TD');
+                       //             //trTbody.appendChild(tdTbody);
+                       //         }
+                       //         //var bottomTheader = bottomClone.getElementsByTagName("THEAD")[0];       //remove headers
+                       //         //if(bottomTheader) {
+                       //         //    var bottomTheadetTr=bottomTheader.getElementsByTagName("TR")[0];
+                       //         //    while (bottomTheadetTr.firstChild) {
+                       //         //        bottomTheadetTr.removeChild(bottomTheadetTr.firstChild);
+                       //         //    }
+                       //         //}
+                       //     }
+                       //     //var scrollDiv=hInstance.rootElement.getElementsByClassName("ht_clone_top handsontable")[0].getElementsByClassName("wtHolder")[0];
+                       //     //scrollDiv.onscroll=function(){
+                       //     //    bottomClone.style.left=-(hInstance.view.wt.wtOverlays.leftOverlay.getScrollPosition())+"px";
+                       //     //};
+                       //
+                       //     var nextHeaderSibling=headerTop.nextElementSibling/*.innerHTML*/;
+                       //     if(nextHeaderSibling.className=="ht_clone_bottom handsontable"){
+                       //         nextHeaderSibling.parentNode.removeChild(nextHeaderSibling);
+                       //     }
+                       //     insertAfter(bottomClone,headerTop);
+                       // }
+                       // //---
+
+                        var theads=hInstance.rootElement.getElementsByTagName('thead');
+                        var div= document.createElement("div");
                         for(var theadInd=0;theadInd<theads.length;theadInd++){
-                            var thead= theads[theadInd], trs=thead.getElementsByTagName('tr');         //console.log("HTableSimple beforeRender thead=",thead.childNodes.length);
-                            if(!trs) continue;
-                            var tr0= trs[0];
-                            if(!tr0) continue;
-                            if(tr0.getAttribute('id')=="htAddedTableHeader") {                          //console.log("HTableSimple beforeRender tr0=",tr0);
-                                tr0.remove();
+                            var thead= theads[theadInd];
+                            var newTR = document.createElement("tr");
+                            var newTH=document.createElement("th");
+                            newTR.appendChild(newTH);
+                            var tr=thead.getElementsByTagName('tr')[0];
+                            if(theadInd<=1) {
+                                thead.insertBefore(newTR, tr);
+                                newTH.setAttribute("colspan", tr.childNodes.length.toString());
+                                if(theadInd==1)newTH.appendChild(div);
+                                if (tr.firstChild) tr.firstChild.removeAttribute("colspan");
                             }
                         }
-                    }
-                });
-                hInstance.updateSettings({
-                    afterRender: function () {                                                                  //console.log("HTableSimple afterRender1 ",this,this.rootElement);
-                        var theads=[];
-                        var htMasterDIVs=this.rootElement.getElementsByClassName('ht_master handsontable');
-                        if(htMasterDIVs) {
-                            var htMasterDIV=htMasterDIVs[0], htMasterDIVtheads;
-                            if(htMasterDIV) htMasterDIVtheads=htMasterDIV.getElementsByTagName('thead');
-                            if(htMasterDIVtheads) theads.push(htMasterDIVtheads[0]);
-                        }
-                        var htCloneTopDIVs=this.rootElement.getElementsByClassName('ht_clone_top handsontable');
-                        if(htCloneTopDIVs) {
-                            var htCloneTopDIV=htCloneTopDIVs[0], htCloneTopDIVtheads;
-                            if(htCloneTopDIV) htCloneTopDIVtheads=htCloneTopDIV.getElementsByTagName('thead');
-                            if(htCloneTopDIVtheads) theads.push(htCloneTopDIVtheads[0]);
-                        }
-
-                        //if(!this.htAddedTableHeader)this.htAddedTableHeader={thATHTRs:[]};
-                        //var htAddedTableHeader=this.htAddedTableHeader;
-
-                        for(var theadInd=0;theadInd<theads.length;theadInd++){
-                            if (theadInd>1) break;
-                            var thead= theads[theadInd], trs=thead.getElementsByTagName('tr');
-                            if(!trs) continue;
-                            var tr0= trs[0];
-                            if(!tr0) continue;
-                            if(tr0.getAttribute('id')!="htAddedTableHeader"){                               //console.log("HTableSimple afterRender htAddedTableHeader");
-                                var thATHTR = document.createElement("tr"); thATHTR.setAttribute("id","htAddedTableHeader");
-                                var thATHTH=document.createElement("th"); thATHTR.appendChild(thATHTH);
-                                thead.insertBefore(thATHTR, tr0);
-                                thATHTR.firstChild.setAttribute("colspan", tr0.childNodes.length.toString());
-                                if (tr0.firstChild) tr0.firstChild.removeAttribute("colspan");
-                                if(theadInd==1){
-                                    var div= document.createElement("div");
-                                    thATHTR.appendChild(div);
-                                }
-                            }
-                        }
-                        //for(var eName in addingHeaderElements)
-                        //    div.appendChild(addingHeaderElements[eName]);
-
-
-                        //var thead=hInstance.view.THEAD;                                                         console.log("HTableSimple afterRender1 view=",hInstance.view);
-                        //var topTableTR=document.createElement("tr");
-                        ////thead.appendChild(topTableTR);
-                        //thead.insertBefore(topTableTR,thead.firstChild);
-                        //var topTableTH=document.createElement("th"); topTableTR.appendChild(topTableTH);
-
-                        //var wtHiders=hInstance.rootElement.getElementsByClassName('wtHider');                   //console.log("HTableSimple afterRender1 ",wtHiders);
-                        //for(var ind=0;ind<wtHiders.length;ind++) {
-                        //    if(ind>1) break;
-                        //    var wtHider=wtHiders[ind];                                                          //console.log("HTableSimple afterRender1 ",wtHider);
-                        //    if(wtHider.firstChild&&wtHider.firstChild.id!="tableTopHeader"){
-                        //        var tableTopHeader=document.createElement("div");tableTopHeader.id="tableTopHeader";
-                        //        //hInstance.tableAddedHeader=tableTopHeader;
-                        //        tableTopHeader.setAttribute("class","wtSpreader");
-                        //        tableTopHeader.setAttribute("style","width:100%");//height:30px;;border:none position:relative
-                        //        wtHider.insertBefore(tableTopHeader,wtHider.firstChild);
-                        //
-                        //        var topTable=document.createElement("table"); tableTopHeader.appendChild(topTable);
-                        //        topTable.setAttribute("class","thCore");//topTable.setAttribute("style","border:none");
-                        //        topTable.setAttribute("height","100%");
-                        //        topTable.setAttribute("width","100%");
-                        //
-                        //        //var topTableH=document.createElement("thead"); topTable.appendChild(topTableH);
-                        //
-                        //        var topTableTR=document.createElement("tr"); topTable.appendChild(topTableTR);
-                        //        var topTableTH=document.createElement("th"); topTableTR.appendChild(topTableTH);
-                        //        var topTableTHdiv=document.createElement("div"); topTableTH.appendChild(topTableTHdiv);
-                        //        //topTableTHdiv.setAttribute("class","relative");
-                        //        //topTableTHdiv.setAttribute("style","height:30px");
-                        //        //if(ind==1) {
-                        //        //    for(var eName in addingHeaderElements)
-                        //        //        topTableTHdiv.appendChild(addingHeaderElements[eName]);
-                        //        //}
-                        //    }
-                        //}
+                        for(var eName in addingHeaderElements)
+                            div.appendChild(addingHeaderElements[eName]);
 
                     }
                 });
-                //hInstance.updateSettings({
-                //    afterGetColHeader: function() {                                                 console.log("HTableSimple afterGetColHeader",this);
-                //        var theads=[];
-                //        var htMasterDIVs=this.rootElement.getElementsByClassName('ht_master handsontable');
-                //        if(htMasterDIVs) {
-                //            var htMasterDIV=htMasterDIVs[0], htMasterDIVtheads;
-                //            if(htMasterDIV) htMasterDIVtheads=htMasterDIV.getElementsByTagName('thead');
-                //            if(htMasterDIVtheads) theads.push(htMasterDIVtheads[0]);
-                //        }
-                //        var htCloneTopDIVs=this.rootElement.getElementsByClassName('ht_clone_top handsontable');
-                //        if(htCloneTopDIVs) {
-                //            var htCloneTopDIV=htCloneTopDIVs[0], htCloneTopDIVtheads;
-                //            if(htCloneTopDIV) htCloneTopDIVtheads=htCloneTopDIV.getElementsByTagName('thead');
-                //            if(htCloneTopDIVtheads) theads.push(htCloneTopDIVtheads[0]);
-                //        }                                                                               console.log("HTableSimple afterGetColHeader theads=",theads);
-                //        //for(var theadInd=0;theadInd<theads.length;theadInd++){
-                //        //    var thead= theads[theadInd], trs=thead.getElementsByTagName('tr');         //console.log("HTableSimple beforeRender thead=",thead.childNodes.length);
-                //        //    if(!trs) continue;
-                //        //    var tr0= trs[0];
-                //        //    if(!tr0) continue;
-                //        //    if(tr0.getAttribute('id')=="htAddedTableHeader") {                          //console.log("HTableSimple beforeRender tr0=",tr0);
-                //        //        tr0.remove();
-                //        //    }
-                //        //
-                //        //}
-                //
-                //        //while ($('.ht_clone_top.handsontable #header-grouping th').size() > 0)
-                //        //    $('.ht_clone_top.handsontable #header-grouping th').remove();
-                //    }
-                //});
-                                                                                                            console.log("HTableSimple hInstance=",hInstance);
-                //hInstance.updateSettings({
-                //    getColumnHeaderHeight: function () {                                                     console.log("HTableSimple getColumnHeaderHeight ",hInstance);
-                //                            //console.log("outerHeight",hInstance.tableAddedHeader,hInstance.tableAddedHeader.offsetHeight);
-                //        return hInstance.tableAddedHeader.offsetHeight;
-                //    }
-                //});
-                //hInstance.updateSettings({
-                //    modifyColumnHeaderHeight: function () {                                                     console.log("HTableSimple modifyColumnHeaderHeight ",this);
-                //        //    console.log("outerHeight",hInstance.tableAddedHeader,hInstance.tableAddedHeader.offsetHeight);
-                //        //    return hInstance.tableAddedHeader.offsetHeight;
-                //    }
-                //});
             },
             resizeAll: function(changeSize,resultSize){
                 if(!changeSize) return;
@@ -392,17 +307,17 @@ define(["dojo/_base/declare", "dijit/layout/ContentPane","dojox/widget/Standby",
             //    this.set("disabled",disabled);
             //    if (disabled) this.handsonTable
             //},
-            /**
+            /*
              * newdata = { identifier:"...", columns:[...], items:[...] }
              * if newdata.items=null table data content cleared (columns not clreared)
              * calls on load/set/reset data to table or on change data after store
-             * params= { callUpdateContent=true/false, resetSelection=true/false }
+             * params= { callOnUpdateContent=true/false, resetSelection=true/false }
              * default params.resetSelection!=false
              * if params.resetSelection==false not call resetSelection
-             * default params.callUpdateContent!=false
-             * if params.callUpdateContent==false not call onUpdateContent
+             * default params.callOnUpdateContent!=false
+             * if params.callOnUpdateContent==false not call onUpdateContent
              */
-            updateContent: function(newdata,params) {                                               console.log("HTableSimple updateContent newdata=",newdata," params=", params);
+            updateContent: function(newdata,params) {                                                           //console.log("HTableSimple updateContent newdata=",newdata," params=", params);
                 if(newdata!==undefined) this.setData(newdata);
                 if(this.htData!==null) {//loadTableContent
                     this.handsonTable.updateSettings(
@@ -411,28 +326,27 @@ define(["dojo/_base/declare", "dijit/layout/ContentPane","dojox/widget/Standby",
                     if(params&&params.resetSelection!==false) this.resetSelection();
                 } else {//clearTableDataContent
                     this.clearContent(params);
-                    return;
                 }
-                if (params&&params.callUpdateContent===false) return;
+                if (params&&params.callOnUpdateContent===false) return;
                 this.onUpdateContent();
             },
-            setContent: function(newdata,params) {                                                  //console.log("HTableSimple setContent newdata=", newdata);
-                this.updateContent(newdata,params);
+            setContent: function(newdata) {                                                                                 //console.log("HTableSimple setContent newdata=", newdata);
+                this.updateContent(newdata);
             },
-            /**
-             * params= { callUpdateContent=true/false, resetSelection=true/false }
+            /*
+             * params= { callOnUpdateContent=true/false, resetSelection=true/false }
              * default params.resetSelection!=false
              * if params.resetSelection==false not call resetSelection
-             * default params.callUpdateContent!=false
-             * if params.callUpdateContent==false not call onUpdateContent
+             * default params.callOnUpdateContent!=false
+             * if params.callOnUpdateContent==false not call onUpdateContent
              */
-            clearContent: function(params) {                                                        //console.log("HTableSimple clearContent");
+            clearContent: function(params) {                                                                                //console.log("HTableSimple clearContent");
                 if(params&&params.resetSelection!==false) this.setSelection(null,null);
                 this.handsonTable.updateSettings({columns:this.htVisibleColumns, data:[], comments:false, readOnly:true});
-                if (params&&params.callUpdateContent===false) return;
+                if (params&&params.callOnUpdateContent===false) return;
                 this.onUpdateContent();
             },
-            resetSelection: function(){                                                             //console.log("HTableSimple resetSelection ",this.getSelectedRows()," rowIDName=", this.handsonTable.rowIDName);
+            resetSelection: function(){                                                                         //console.log("HTableSimple resetSelection ",this.getSelectedRows()," rowIDName=", this.handsonTable.rowIDName);
                 var newData= this.getContent();
                 var newSelection= null, newSelectionFirstRowIndex, oldSelection= this.getSelectedRows();
                 if (oldSelection){
@@ -457,7 +371,7 @@ define(["dojo/_base/declare", "dijit/layout/ContentPane","dojox/widget/Standby",
                         break;
                     }
                 }
-                this.setSelection( (newSelection)?newSelection[newSelectionFirstRowIndex]:null, newSelection); //console.log("HTableSimple resetSelection END",this.getSelectedRows()," rowIDName=", this.handsonTable.rowIDName);
+                this.setSelection( (newSelection)?newSelection[newSelectionFirstRowIndex]:null, newSelection);              //console.log("HTableSimple resetSelection END",this.getSelectedRows()," rowIDName=", this.handsonTable.rowIDName);
             },
             getContent: function(){
                 return this.handsonTable.getContent();
@@ -488,21 +402,19 @@ define(["dojo/_base/declare", "dijit/layout/ContentPane","dojox/widget/Standby",
              * param = { updatedRows }
              * param.updatedRows has values if call updateRowData
              */
-            onUpdateContent: function(params){                                                              //console.log("HTableSimple onUpdateContent");
+            onUpdateContent: function(params){                                                                  //console.log("HTableSimple onUpdateContent");
                 //TODO actions on/after update table content (after set/reset/reload/clear table content data)
                 //TODO actions and after call updateRowData({rowData,newRowData})
             },
             /**
-             * params: { method=get/post , url, condition:string or object, data,
-             *      duplexRequest:true/false,
-             *      dontClearContent:true/false, resetSelection:true/false, callUpdateContent:true/false }
+             * params: {method=get/post , url, condition:string or object, duplexRequest:true/false, dontClearContent:true/false, data, callUpdateContent:true/false}
              * if (duplexRequest=true) or (duplexRequest=undefined and no htColumns data),
              *     sends two requests: first request without parameters to get columns data without table data
              *     and second request with parameters from params.condition to get table data;
              * if duplexRequest=false, sends only one request to get table data with columns data.
              * if clearContentBeforeLoad==true content clearing before send request for table data
              */
-            setContentFromUrl: function(params){                                                            console.log("HTableSimple setContentFromUrl ",params);
+            setContentFromUrl: function(params){                                                                console.log("HTableSimple setContentFromUrl ",params);
                 var instance = this;
                 if (!params) {
                     this.updateContent(null);
@@ -510,34 +422,28 @@ define(["dojo/_base/declare", "dijit/layout/ContentPane","dojox/widget/Standby",
                 }
                 if (!params.method) params.method="get";
                 var duplexRequest= (params.duplexRequest===true)||( (!this.htColumns||this.htColumns.length==0)&&(params.duplexRequest!==false) );
-                if (params.method=="get") {
+                if (params.method!="post") {
                     if (duplexRequest){
                         instance.loadingGif.show();
                         Request.getJSONData({url:params.url, condition:null}
                             ,/*postaction*/function(result){
                                 if(!result) {
-                                    instance.loadingGif.hide();
                                     instance.updateContent({columns:instance.htColumns, items:[]}, {callUpdateContent:params.callUpdateContent});
+                                    instance.loadingGif.hide();
                                     return;
                                 }
                                 if(!result.columns) result.columns=instance.htColumns;
                                 if(!result.items) result.items=[];
-                                instance.loadingGif.hide();
                                 instance.updateContent(result, {callUpdateContent:params.callUpdateContent, resetSelection:false});
                                 var sCondition= JSON.stringify(params.condition);
-                                if(sCondition.length==0||sCondition==="{}"){  //if condition is Empty
-                                    instance.loadingGif.hide();
-                                    if(params.resetSelection)instance.resetSelection();
-                                    return;
-                                }
+                                if(sCondition.length==0||sCondition==="{}"){ instance.loadingGif.hide(); return; }  //if condition is Empty
                                 Request.getJSONData({url:params.url, condition:params.condition}
                                     ,/*postaction*/function(result){
                                         if(!result) result={};
                                         if(!result.columns) result.columns=instance.htColumns;
                                         if(!result.items) result.items=[];
+                                        instance.updateContent(result, {callUpdateContent:params.callUpdateContent});
                                         instance.loadingGif.hide();
-                                        instance.updateContent(result,
-                                            {callUpdateContent:params.callUpdateContent, resetSelection:params.resetSelection});
                                     });
                             });
                         return;
@@ -550,42 +456,39 @@ define(["dojo/_base/declare", "dijit/layout/ContentPane","dojox/widget/Standby",
                             if(!result) result={};
                             if(!result.columns) result.columns=instance.htColumns;
                             if(!result.items) result.items=[];
+                            instance.updateContent(result, {callUpdateContent:params.callUpdateContent});
                             instance.loadingGif.hide();
-                            instance.updateContent(result,
-                                {callUpdateContent:params.callUpdateContent, resetSelection:params.resetSelection});
                         });
                     return;
                 }
-                if (params.method!="post") return;
                 if (duplexRequest){
                     instance.loadingGif.show();
                     Request.postJSONData({url:params.url, condition:null},
                         /*postaction*/function(result){
                             if(!result) {
+                                instance.updateContent(result, {callUpdateContent:params.callUpdateContent});
                                 instance.loadingGif.hide();
-                                instance.updateContent({columns:instance.htColumns, items:[]},
-                                    {callUpdateContent:params.callUpdateContent});
                                 return;
                             }
+                            if(!result.columns) result.columns=instance.htColumns;
+                            if(!result.items) result.items=[];
                             instance.updateContent(result, {callUpdateContent:params.callUpdateContent, resetSelection:false});
                             var sCondition= JSON.stringify(params.condition);
-                            if(sCondition.length==0||sCondition==="{}") {//if condition is Empty
+                            if(sCondition.length==0||sCondition==="{}") {
                                 instance.loadingGif.hide();
-                                if(params.resetSelection)instance.resetSelection();
                                 return;
-                            }
+                            }//if condition is Empty
                             Request.postJSONData({url:params.url, condition:params.condition, data:params.data},
                                 /*postaction*/function(result){
                                     if(!result) {
+                                        instance.updateContent({ columns:instance.htColumns, items:[] }, {callUpdateContent:params.callUpdateContent});
                                         instance.loadingGif.hide();
-                                        instance.updateContent({ columns:instance.htColumns, items:[] },
-                                            {callUpdateContent:params.callUpdateContent,resetSelection:params.resetSelection});
                                         return;
                                     }
-                                    if (result.items && result.items.length>0)
-                                        instance.loadingGif.hide();
-                                    instance.updateContent(result,
-                                        {callUpdateContent:params.callUpdateContent,resetSelection:params.resetSelection});
+                                    if(!result.columns) result.columns=instance.htColumns;
+                                    if(!result.items) result.items=[];
+                                    instance.updateContent(result, {callUpdateContent:params.callUpdateContent});
+                                    instance.loadingGif.hide();
                                 });
                         });
                     return;
@@ -596,14 +499,14 @@ define(["dojo/_base/declare", "dijit/layout/ContentPane","dojox/widget/Standby",
                 Request.postJSONData({url:params.url, condition:params.condition, data:params.data},
                     /*postaction*/function(result){
                         if(!result) {
+                            instance.updateContent({ columns:instance.htColumns, items:[] }, {callUpdateContent:params.callUpdateContent});
                             instance.loadingGif.hide();
-                            instance.updateContent({columns:instance.htColumns, items:[]},
-                                {callUpdateContent:params.callUpdateContent,resetSelection:params.resetSelection});
                             return;
                         }
+                        if(!result.columns) result.columns=instance.htColumns;
+                        if(!result.items) result.items=[];
+                        instance.updateContent(result, {callUpdateContent:params.callUpdateContent});
                         instance.loadingGif.hide();
-                        instance.updateContent(result,
-                            {callUpdateContent:params.callUpdateContent,resetSelection:params.resetSelection});
                     });
             },
             /**
@@ -663,18 +566,10 @@ define(["dojo/_base/declare", "dijit/layout/ContentPane","dojox/widget/Standby",
                         tableInstance.updateRowsActionCallback(tableInstance, rowsData, rowsData.length, actionParams, actionFunction, finishedAction);
                     })
             },
-            setSelection:function(firstSelectedRowData, selection){//callback onSelect
-                if (firstSelectedRowData===undefined){
-                    this.handsonTable.getSettings().setDataSelectedProp(this.getSelectedRow());
-                    this.handsonTable.render();
-                    return;
-                }
-                var oldSelRow= this.getSelectedRow();                                                       //console.log("HTableSimple setSelection",selection);
-                this.handsonTable.getSettings().setDataSelectedProp(firstSelectedRowData, oldSelRow);
-                this.htSelection= selection;
-                this.handsonTable.render();
+            setSelectedRow: function(rowIndex){
+                this.handsonTable.selectCell(rowIndex,0,rowIndex,0);
             },
-            setSelectionByItemValue:function(itemName, value){
+            setSelectedRowByItemValue:function(itemName, value){
                 var oldSelectedRow=this.getSelectedRow(), instance=this;
                 this.getContent().some(function(item,rowIndex){
                     if (item[itemName]==value) {
@@ -684,9 +579,7 @@ define(["dojo/_base/declare", "dijit/layout/ContentPane","dojox/widget/Standby",
                 var newSelectedRow=this.getSelectedRow();
                 this.handsonTable.getSettings().setDataSelectedProp(newSelectedRow, oldSelectedRow);
                 this.handsonTable.render();
-            },
-            setSelectedRow: function(rowIndex){
-                this.handsonTable.selectCell(rowIndex,0,rowIndex,0);
+                this.onSelect(newSelectedRow,this.htSelection);
             },
             getSelectedRowIndex:function(){
                 if(!this.htSelection) return null;
@@ -716,14 +609,25 @@ define(["dojo/_base/declare", "dijit/layout/ContentPane","dojox/widget/Standby",
                 //TODO actions on/after row select by user or after call setSelectedRow/setSelectedRowByID
                 this.setSelection(firstSelectedRowData, selection);
             },
+            setSelection:function(firstSelectedRowData, selection){//callback onSelect
+                if (firstSelectedRowData===undefined){
+                    this.handsonTable.getSettings().setDataSelectedProp(this.getSelectedRow());
+                    this.handsonTable.render();
+                    return;
+                }
+                var oldSelRow= this.getSelectedRow();                                                       //console.log("HTableSimple setSelection",selection);
+                this.handsonTable.getSettings().setDataSelectedProp(firstSelectedRowData, oldSelRow);
+                this.htSelection= selection;
+                this.handsonTable.render();
+            },
             /**
              * menuAction= function(selRowsData, actionParams, thisInstance)
              */
-            setMenuItem: function(itemName, actionParams, menuAction){                                       //console.log("HTableSimple setMenuItem",itemID,this.popupMenuItems,this);
+            setMenuItem: function(itemName, actionParams, menuAction){                                      //console.log("HTableSimple setMenuItem",itemID,this.popupMenuItems,this);
                 var thisInstance= this;
                 this.popupMenuItems.push({
                     name:itemName,
-                    callback: function(key, options){                                                        //console.log("HTableSimple menuItem callback",key,options);
+                    callback: function(key, options){                                                       //console.log("HTableSimple menuItem callback",key,options);
                         var selRowsData= [];
                         if(options.start&&options.end){
                             var startRowIndex= options.start.row, endRowIndex= options.end.row;
@@ -737,3 +641,12 @@ define(["dojo/_base/declare", "dijit/layout/ContentPane","dojox/widget/Standby",
             }
         });
     });
+function insertAfter(elem, refElem) {
+    var parent = refElem.parentNode;
+    var next = refElem.nextSibling;
+    if (next) {
+        return parent.insertBefore(elem, next);
+    } else {
+        return parent.appendChild(elem);
+    }
+}

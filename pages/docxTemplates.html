@@ -7,36 +7,42 @@
 <body>
 <div id="docxTemplates_PageContainer" style="width:100%;height:100%;">
     <div id="docxTemplates_ContentPaneDetailContainer" style="width:100%;height:100%; margin:0;padding:0;">
-        <table id="docxTemplatesParameters" class="docxTemplateParameters">
+        <table id="docxTemplatesParameters" class="docxTemplateParameters" width="100%">
             <tr>
-                <th height="30px"><b>Название параметра:</b></th>
-                <th height="30px"><b>Значение параметра:</b></th>
+                <th height="30px"><b>Название параметра:</b></th><th height="30px"><b>Значение параметра:</b></th>
             </tr>
         </table>
     </div>
-    <div id="docxTemplates_ContentPaneRight" style="width:500px;height:100%; margin:0;padding:0;">
-        <table width="100%" class="docxTemplateParameters">
-            <tr height="30px"><th>Сохраненные параметры</th></tr>
-            <tr><td>
-                <!--<button id="docxTemplates_btnProdsRems">Остатки товаров</button>-->
-                <!--<button id="docxTemplates_btnProdsMoves">Движение товаров</button>-->
-            </td></tr>
-        </table>
+    <div id="docxTemplates_ContentPaneParamsHistory" style="width:100%;height:200px; margin:0;padding:0;">
+        <div id="docxTemplates_TableParamsHistoryHeader" style="width:100%;height:auto; margin:0;padding:0;">
+            <table width="100%" height="100%" class="docxTemplateParameters" style="margin:0;padding:0;">
+                <tr height="25px"><th>Сохраненные параметры</th></tr>
+            </table>
+        </div>
+        <div id="docxTemplates_TableParamsHistory" style="margin:0;padding:0"></div>
     </div>
 </div>
 </body>
 <script type="text/javascript">
-    require(["app/app", "dojo/dom-style", "dijit/layout/BorderContainer", "dijit/layout/StackContainer", "dijit/layout/ContentPane",
-                "dijit/form/Button", "dijit/form/TextBox", "app/request", "app/tDocSimpleTable"],
-            function (APP, domStyle, BorderContainer, StackContainer, ContentPane, Button, TextBox, Request, TDocSimpleTable) {
+    require(["app/app", "dojo/dom-style", "dijit/layout/BorderContainer", "dijit/layout/LayoutContainer", "dijit/layout/ContentPane",
+                "dijit/form/Button", "dijit/form/TextBox", "app/request", "app/dialogs", "app/hTableSimpleFiltered"],
+            function (APP, domStyle, BorderContainer, LayoutContainer, ContentPane, Button, TextBox, Request, Dialogs, HTable) {
                 var pageContainer= APP.instanceForID("docxTemplates_PageContainer", BorderContainer, {});
                 var contentPaneDetail= APP.instanceForID("docxTemplates_ContentPaneDetailContainer", ContentPane, {region:'center'});
-                APP.instanceForID("docxTemplates_ContentPaneRight", ContentPane, {region:'right', splitter:true});
+                var contentPaneParamsHistory= APP.instanceForID("docxTemplates_ContentPaneParamsHistory", LayoutContainer, {region:'bottom', splitter:true});
+                APP.instanceForID("docxTemplates_TableParamsHistoryHeader", ContentPane, {region:'top'});
+                contentPaneParamsHistory.hTableParamsHistory=
+                        new HTable({region:'center', wordWrap:true, readOnly:true, useFilters:true, allowFillHandle:false},
+                                "docxTemplates_TableParamsHistory");
+                contentPaneParamsHistory.loadParamsHistory= function(){
+                    contentPaneParamsHistory.hTableParamsHistory.setContentFromUrl({url:"/docxTemplates/"+pageID+"/getTemplateParamsHistory",condition:null});
+                };
+
                 var pageID="docxTemplates_";
                 contentPaneDetail.textBoxes={};
-                contentPaneDetail.setTemplateFields = function(){
-                    Request.getJSONData({url:"/docxTemplates/"+pageID+"/getFields", consoleLog:true},
-                            function(result){                                                       console.log(pageID+".getFields result=",result); //title,icon32x32,imageSmall,imageMain
+                contentPaneDetail.setTemplateContent = function(){
+                    Request.getJSONData({url:"/docxTemplates/"+pageID+"/getTemplateData", consoleLog:true},
+                            function(result){                                                       console.log(pageID+".getTemplateData result=",result);
                                 if(result===undefined||result==null) result = [];
                                 if(!result.fields) return;
                                 var tr,td,div, label,input,textBox, button;
@@ -69,12 +75,19 @@
                                     }
                                     Request.postJSONData({url:"/docxTemplates/"+pageID+"/sendDataAndGenDocx", data:sendingData, consoleLog:true},
                                             function(result){
-
+                                                if(result.result){
+                                                    var userMsg=result.userMsg;
+                                                    if(!userMsg) userMsg="НЕИЗВЕСТНО.";
+                                                    Dialogs.doRequestFailDialog({title:"Результат операции",content:userMsg});
+                                                } else {
+                                                    Dialogs.doRequestFailDialog({title:"Внимание",content:"Не удалось получить результат операции с сервера!"});
+                                                }
                                             });
                                     };
+                                    contentPaneParamsHistory.loadParamsHistory();
                             });
                 };
-                contentPaneDetail.setTemplateFields();
+                contentPaneDetail.setTemplateContent();
 //                var btnProdsRems= APP.instanceForID("docxTemplates_btnProdsRems", Button, {},{"width":"150px"});
 //                var btnProdsMoves= APP.instanceForID("docxTemplates_btnProdsMoves", Button, {},{"width":"150px"});
 //                var contentPaneDetailContainer= APP.instanceForID("docxTemplates_ContentPaneDetailContainer", StackContainer, {region:'center'});
