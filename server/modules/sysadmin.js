@@ -22,7 +22,6 @@ module.exports.init = function(app){
         var outData= {};
         outData.mode= appParams.mode;
         outData.port=appParams.port;
-        outData.dbUserName=req.dbUserName;
         var serverConfig=getServerConfig();
         if (!serverConfig||serverConfig.error) {
             outData.error= (serverConfig&&serverConfig.error)?serverConfig.error:"unknown";
@@ -34,19 +33,19 @@ module.exports.init = function(app){
         if(loadInitModulesError) outData.modulesFailures = loadInitModulesError;
         if (revalidateModules) {
             appModules.validateModules(function(errs, errMessage){
-                if(errMessage) outData.dbValidation = errMessage; else outData.dbValidation = "success";
+                if(errMessage) outData.moduleValidateResult = errMessage; else outData.moduleValidateResult = "success";
                 res.send(outData);
             });
             return;
         }
         outData.config=getConfig();
         var validateError=getValidateError();
-        if(validateError) outData.dbValidation=validateError; else outData.dbValidation = "success";
+        if(validateError) outData.moduleValidateResult=validateError; else outData.moduleValidateResult = "success";
         res.send(outData);
     });
 
     app.get("/sysadmin/serverConfig", function (req, res) {
-        res.sendFile(appViewsPath+'sysadmin/serverConfig.html');
+        res.sendFile(appViewsPath+'serverConfig.html');
     });
 
     app.get("/sysadmin/server/getServerConfig", function (req, res) {
@@ -68,10 +67,8 @@ module.exports.init = function(app){
         res.send(serverConfig);
     });
 
-    app.post("/sysadmin/serverConfig/storeServerConfigAndReconnect", function (req, res) {
+    app.post("/sysadmin/serverConfig/storeServerConfig", function (req, res) {
         var newServerConfig = req.body;
-        //var currentDbName=server.getServerConfig().database;
-        var currentDbHost=server.getServerConfig().host;
         common.saveConfig(appParams.mode+".cfg", newServerConfig,
             function (err) {
                 var outData = {};
@@ -80,12 +77,9 @@ module.exports.init = function(app){
                     res.send(outData);
                     return;
                 }
-                //if(!(currentDbName==newServerConfig.database) || !(currentDbHost==newServerConfig.host)){
-                //    database.cleanConnectionPool();
-                //}
                 setAppConfig(newServerConfig);
                 appModules.validateModules(function (errs, errMessage) {
-                    if (errMessage) outData.dbValidation = errMessage;
+                    if (errMessage) outData.moduleValidateResult = errMessage;
                     res.send(outData);
                 });
             });

@@ -13,7 +13,7 @@
             </tr>
         </table>
     </div>
-    <div id="docxTemplates_ContentPaneParamsHistory" style="width:100%;height:200px; margin:0;padding:0;">
+    <div id="docxTemplates_ContentPaneParamsHistory" style="width:100%;height:250px; margin:0;padding:0;">
         <div id="docxTemplates_TableParamsHistoryHeader" style="width:100%;height:auto; margin:0;padding:0;">
             <table width="100%" height="100%" class="docxTemplateParameters" style="margin:0;padding:0;">
                 <tr height="25px"><th>Сохраненные параметры</th></tr>
@@ -36,6 +36,18 @@
                                 "docxTemplates_TableParamsHistory");
                 contentPaneParamsHistory.loadParamsHistory= function(){
                     contentPaneParamsHistory.hTableParamsHistory.setContentFromUrl({url:"/docxTemplates/"+pageID+"/getTemplateParamsHistory",condition:null});
+                    contentPaneParamsHistory.hTableParamsHistory.onUpdateContent= function() {
+                        contentPaneParamsHistory.hTableParamsHistory.setSelectedRow(0);
+                    };
+                    contentPaneParamsHistory.hTableParamsHistory.onSelect = function (firstSelectedRowData, selection) {      console.log("hTableParamsHistory.onSelect ",firstSelectedRowData);
+                        this.setSelection(firstSelectedRowData, selection);
+                        if(!firstSelectedRowData) return;
+                        for(var tfID in firstSelectedRowData){
+                            var textBox= contentPaneDetail.textBoxes[tfID];
+                            if(!textBox) continue;
+                            textBox.set('value',firstSelectedRowData[tfID]);
+                        }
+                    }
                 };
 
                 var pageID="docxTemplates_";
@@ -47,19 +59,19 @@
                                 if(!result.fields) return;
                                 var tr,td,div, label,input,textBox, button;
                                 var table= contentPaneDetail.domNode.getElementsByTagName("table")[0];
-                                for(var tID in result.fields){
-                                    var tTitle=result.fields[tID];
+                                for(var tfID in result.fields){
+                                    var tTitle=result.fields[tfID];
                                     table.appendChild(tr=document.createElement("tr"));
                                     tr.appendChild(td=document.createElement("td"));
                                     td.appendChild(div=document.createElement("div"));td.setAttribute("style","text-align:right");
                                     div.appendChild(label=document.createElement("label"));
-                                    label.setAttribute("for",pageID+tID);label.innerHTML=tTitle;
+                                    label.setAttribute("for",pageID+tfID);label.innerHTML=tTitle;
                                     tr.appendChild(td=document.createElement("td"));
                                     td.appendChild(div=document.createElement("div"));
                                     div.appendChild(input=document.createElement("input"));
-                                    input.setAttribute("id",pageID+tID);
-                                    textBox=new TextBox({id:pageID+tID,style:"width:450px;"},pageID+tID);
-                                    contentPaneDetail.textBoxes[tID]=textBox;
+                                    input.setAttribute("id",pageID+tfID);
+                                    textBox=new TextBox({id:pageID+tfID,style:"width:450px;"},pageID+tfID);
+                                    contentPaneDetail.textBoxes[tfID]=textBox;
                                 }
                                 table.appendChild(tr=document.createElement("tr"));
                                 tr.appendChild(document.createElement("td"));
@@ -75,13 +87,14 @@
                                     }
                                     Request.postJSONData({url:"/docxTemplates/"+pageID+"/sendDataAndGenDocx", data:sendingData, consoleLog:true},
                                             function(result){
-                                                if(result.result){
+                                                if(result.generateResult){
                                                     var userMsg=result.userMsg;
                                                     if(!userMsg) userMsg="НЕИЗВЕСТНО.";
                                                     Dialogs.doRequestFailDialog({title:"Результат операции",content:userMsg});
                                                 } else {
                                                     Dialogs.doRequestFailDialog({title:"Внимание",content:"Не удалось получить результат операции с сервера!"});
                                                 }
+                                                if(result.storeHistoryResult=="SUCCESS")contentPaneParamsHistory.loadParamsHistory();
                                             });
                                     };
                                     contentPaneParamsHistory.loadParamsHistory();

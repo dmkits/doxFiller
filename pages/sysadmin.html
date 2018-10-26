@@ -21,23 +21,13 @@
         <div id="sysadmin_TopStateInfo">
             <!--<div id="sysadmin_app_user" style="display:inline;"></div>-->
             <div id="sysadmin_app_mode" style="display:inline;inline;margin-left:20px;"></div>
-            <div id="sysadmin_ConnUserName" style="display:inline;;margin-left:20px;"></div>
             <div id="sysadmin_app_port" style="display:inline; margin-left:20px;"></div>
-            <div id="sysadmin_dbName" style="display:inline;;margin-left:20px;"></div>
-            <div id="sysadmin_db_sysadmin_name" style="display:inline;;margin-left:20px;"></div>
-            <div id="sysadmin_connectToDBState" style="display:inline;margin-left:20px;"></div>
             <div id="sysadmin_modulesFailures" style="display:inline;margin-left:20px;"></div>
-            <div id="sysadmin_dbValidateState" style="display:inline;margin-left:20px;"></div>
         </div>
         <div id="sysadmin_TopActions">
             <table>
                 <tr>
                     <td><button id="sysadmin_btnServerConfig">Server configuration</button></td>
-                    <td><button id="sysadmin_btnDatabase">Database</button></td>
-                    <!--<td><button id="sysadmin_btnAppModelSettings">AppModelSettings</button></td>-->
-                    <!--<td><button id="sysadmin_btnSynchronization">Synchronization</button></td>-->
-                    <td><button id="sysadmin_btnLogins">Logins</button></td>
-                    <td><button id="sysadmin_btnLogs">Logs</button></td>
                     <td width="500px"></td>
                     <td><button id="btnLogout">Logout</button></td>
                 </tr>
@@ -64,16 +54,6 @@
                 var functionalButtons=[];
                 var sysadmin_btnServerConfig = new ToggleButton({id:"sysadmin_btnServerConfig",iconClass:'dijitCheckBoxIcon'},"sysadmin_btnServerConfig");
                 functionalButtons.push(sysadmin_btnServerConfig);
-                var sysadmin_btnDatabase = new ToggleButton({id:"sysadmin_btnDatabase",iconClass:'dijitCheckBoxIcon'},"sysadmin_btnDatabase");
-                functionalButtons.push(sysadmin_btnDatabase);
-//                var sysadmin_btnAppModelSettings = new ToggleButton({id:"sysadmin_btnAppModelSettings",iconClass:'dijitCheckBoxIcon'},"sysadmin_btnAppModelSettings");
-//                functionalButtons.push(sysadmin_btnAppModelSettings);
-//                var sysadmin_btnSynchronization=new ToggleButton({id:"sysadmin_btnSynchronization",iconClass:'dijitCheckBoxIcon'},"sysadmin_btnSynchronization" );
-//                functionalButtons.push(sysadmin_btnSynchronization);
-                var sysadmin_btnLogins=new ToggleButton({id:"sysadmin_btnLogins",iconClass:'dijitCheckBoxIcon'},"sysadmin_btnLogins" );
-                functionalButtons.push(sysadmin_btnLogins);
-                var sysadmin_btnLogs=new ToggleButton({id:"sysadmin_btnLogs",iconClass:'dijitCheckBoxIcon'},"sysadmin_btnLogs" );
-                functionalButtons.push(sysadmin_btnLogs);
                 var btnLogout = new ToggleButton({id:"btnLogout"},"btnLogout");
                 var sysadmin_ContentContainer = APP.instanceForID("sysadmin_ContentContainer",
                         StackContainer, {region: "center", tabPosition: "top", class: "sysadmin_Content"});
@@ -114,62 +94,12 @@
                                     eAppPort.innerHTML=eAppPort.innerHTML+"<b style='color:dimgrey'>"+ result.port+"</b>";
                                 else
                                     eAppPort.innerHTML=eAppPort.innerHTML+"<b style='color:dimgrey'>UNKNOWN</b>";
-                                if(result.configuration && result.configuration.database){
-                                    document.getElementById("sysadmin_dbName").innerHTML =
-                                            "<b>DB NAME:<span style='color:dimgrey'>" + result.configuration.database + "</span></b>";
-                                } else {
-                                    document.getElementById("sysadmin_dbName").innerHTML =
-                                            "<b>DB NAME:<span style='color:dimgrey'>UNKNOWN</span></b>";
-                                }
-                                if(result.configuration && result.configuration.user){
-                                    document.getElementById("sysadmin_db_sysadmin_name").innerHTML =
-                                            "<b>DB SYSADMIN USER:<b style='color:dimgrey'>" + result.configuration.user + "</b>";
-                                }else {
-                                    document.getElementById("sysadmin_db_sysadmin_name").innerHTML =
-                                            "<b>DB CONNECTION USER:<span style='color:dimgrey'>UNKNOWN</span></b>";
-                                }
-                                if(result.dbUserName){
-                                    document.getElementById("sysadmin_ConnUserName").innerHTML =
-                                            "<b>DB CONNECTION USER:<b style='color:dimgrey'>" + result.dbUserName + "</b>";
-                                }else {
-                                    document.getElementById("sysadmin_ConnUserName").innerHTML =
-                                            "<b>DB CONNECTION USER:<span style='color:dimgrey'>UNKNOWN</span></b>";
-                                }
 
-                                if (result.systemConnectionErr) {
-                                    document.getElementById("sysadmin_connectToDBState").innerHTML =
-                                            "<b>DB CONNECTION STATE:<span id ='dbConnection_color'>" + result.systemConnectionErr + "</span></b>";
-                                    var dbConnection_color = document.getElementById("dbConnection_color");
-                                    if (result.systemConnectionErr == "Connected") {
-                                        dbConnection_color.setAttribute("style", "color:dimgrey");
-                                        sysadmin_TopContainer.set("style","height:63px; margin:0; padding:0");
-                                    }else {
-                                        dbConnection_color.setAttribute("style", "color:red");
-                                        sysadmin_TopContainer.set("style","height:75px; margin:0; padding:0");
-                                    }
-                                } else {
-                                    document.getElementById("sysadmin_connectToDBState").innerHTML =
-                                            "<b>DB CONNECTION STATE:<span id ='dbConnection_color'>UNKNOWN</span></b>";
-                                }
                                 var modulesFailures=document.getElementById("sysadmin_modulesFailures");
                                 if (result.modulesFailures)
                                     modulesFailures.innerHTML = "<b style='color:red'>MODULES FAILS:" + result.modulesFailures + "</b>";
                                 else
                                     modulesFailures.setAttribute("style","display:none");
-                                var sysadmin_dbValidateState=document.getElementById("sysadmin_dbValidateState");
-                                if (result.dbValidation) {
-                                    sysadmin_dbValidateState.innerHTML =
-                                            "<b>DB VALIDATION STATE:<span id ='dbValidationcolor'>" + result.dbValidation + "</span></b>";
-                                    var dbValidationColor = document.getElementById("dbValidationcolor");
-                                    if (result.dbValidation == "success") {
-                                        dbValidationColor.setAttribute("style", "color:dimgrey");
-                                        sysadmin_TopContainer.set("style","height:63px; margin:0; padding:0");
-                                    }else {
-                                        dbValidationColor.setAttribute("style", "color:red");
-                                        sysadmin_TopContainer.set("style","height:75px; margin:0; padding:0");
-                                    }
-                                } else
-                                    sysadmin_dbValidateState.innerHTML ="UNKNOWN";
                                 sysadmin_TopContainer.resize();
                                 sysadmin_MainContainer.layout();
                             }
@@ -201,32 +131,6 @@
                            "Server configuration", false, "/sysadmin/serverConfig");
                     checkButton(this);
                 };
-                sysadmin_btnDatabase.onClick=function(){
-                    sysadmin_MainContainer.runSysadminContentPage(sysadmin_btnDatabase, "sysadmin_btnDatabase",
-                            "Database", false, "/sysadmin/database");
-                    checkButton(this);
-                };
-//                sysadmin_btnAppModelSettings.onClick=function(){
-//                    sysadmin_MainContainer.runSysadminContentPage(sysadmin_btnAppModelSettings, "sysadmin_btnAppModelSettings",
-//                            "Application model settings", false, "/sysadmin/appModelSettings");
-//                    checkButton(this);
-//                };
-//                sysadmin_btnSynchronization.onClick=function(){
-//                    sysadmin_MainContainer.runSysadminContentPage(sysadmin_btnSynchronization, "sysadmin_btnSynchronization",
-//                            "Synchronization", false, "/system/synchronization");
-//                    checkButton(this);
-//                };
-                sysadmin_btnLogins.onClick=function(){
-                    sysadmin_MainContainer.runSysadminContentPage(sysadmin_btnLogins, "sysadmin_btnLogins",
-                            "Logins", false, "/sysadmin/logins");
-                    checkButton(this);
-                };
-                sysadmin_btnLogs.onClick=function(){
-                    sysadmin_MainContainer.runSysadminContentPage(sysadmin_btnLogs, "sysadmin_btnLogs",
-                            "Logs", false, "/sysadmin/logs");
-                    checkButton(this);
-                };
-
                 btnLogout.onClick=function(){
                     Request.postJSONData({url:"/" /*"/clean_cookie"*/ ,data:{action:"exit"},consoleLog:true},
                             function(result){

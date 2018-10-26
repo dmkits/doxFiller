@@ -4,6 +4,23 @@ var server= require("../server");
 
 global.appDocxTemplates= path.join(__dirname,'/../../docxTemplates/','');
 
+const lowDB = require('lowdb');
+const FileSync = require('lowdb/adapters/FileSync');
+const adapter = new FileSync(path.join(__dirname,'/../../history/','history.db'));
+const historyDB = lowDB(adapter);
+
+// Set some defaults
+historyDB.defaults({ templates: [] }).write();
+
+var getTemplateLastItemsByDate= function(tID, count){
+    //console.log("last=",historyDB.get('templates').findLast(function(item){return item.id=tID}).value());
+    //console.log("filter=",historyDB.get('templates').filter(function(item){return item.id=tID}).sortBy('datetime').takeRight(100).value());
+    //console.log("getTemplateLastItemsByDate map=",historyDB.get('templates').filter(function(item){return item.id=tID}).orderBy('datetime','desc').take(count).map('data').value());
+    var resultSet=
+        historyDB.get('templates').filter(function(item){return item.id==tID}).orderBy('datetime','desc').take(count);     //console.log("getTemplateLastItemsByDate resultSet=",resultSet.value());
+    return resultSet.map(function(item){ item.data['datetime']=item.datetime; return item.data }).value();
+};
+
 module.exports.init= function(app) {
     app.get("/docxTemplates/*", function (req, res) {
         if(!req.params){
@@ -57,32 +74,17 @@ module.exports.init= function(app) {
                 return;
             }
             var tTableParamsHistory=[
-                {data:"LogDatetime", name:"Дата", width:100, type:"text",datetimeFormat:"DD.MM.YY HH:mm:ss",align:"center" }
-                //{data: "ChID", name: "ChID", width: 85, type: "text", readOnly:true, visible:false },
-                //{data: "DocID", name: "Номер", width: 85, type: "text", align:"right" },
-                //{data: "IntDocID", name: "Вн. номер", width: 85, type: "text", align:"right" },
-                //{data: "KursCC", name: "Курс ВС", width: 65, type: "numeric", visible:false },
-                //{data: "TQty", name: "Кол-во", width: 75, type: "numeric" },
-                //{data: "TSumCC_wt", name: "Сумма", width: 85, type: "numeric" },
-                //{data: "StateCode", name: "StateCode", width: 50, type: "text", readOnly:true, visible:false },
-                //{data: "StateName", name: "Статус", width: 250, type: "text" }
+                {data:"datetime", name:"Дата", width:100, type:"text",datetimeFormat:"DD.MM.YY HH:mm:ss",align:"center" }
             ];
             for(var tfID in tFields){
                 tTableParamsHistory.push({data:tfID, name:tfID, width:250, type:"text"});
             }
-            //var conditions={};
-            //for(var condItem in req.query) conditions["t_Rec."+condItem]=req.query[condItem];
-            res.send({columns:tTableParamsHistory,identifier:tTableParamsHistory[0].data,items:[]});
-            //t_Rec.getDataForTable(req.dbUC,{tableColumns:tRecsListTableColumns, identifier:tRecsListTableColumns[0].data,
-            //        conditions:conditions, order:"DocDate, DocID"},
-            //    function(result){
-            //        res.send(result);
-            //    });
+            res.send({columns:tTableParamsHistory,identifier:tTableParamsHistory[0].data,items:getTemplateLastItemsByDate(tID,100)});//console.log("getTemplateLastItemsByDate=",getTemplateLastItemsByDate(tID,2));
             return;
         }
         res.send({error:"UNKNOWN URI action!"});
     });
-    app.post("/docxTemplates/*", function (req, res) {                                  console.log("docxTemplates post data=",req.body);
+    app.post("/docxTemplates/*", function (req, res) {                                  //console.log("docxTemplates post data=",req.body);
         if(!req.params){
             res.send({error:"UNKNOWN URI!"});
             return;
@@ -107,8 +109,9 @@ module.exports.init= function(app) {
                 res.send({error:"NO path or/and name for store template docx!",errorMsg:"Для шаблона не заданы параметры сохранения результата!"});
                 return;
             }
-
+            storeHistory(tID,req.body);
             generateDOCX(tID,req.body,tmplData.outputPath,tmplData.outputName,function(result){
+                result["storeHistoryResult"]="SUCCESS";
                 res.send(result);
             });
             return;
@@ -151,5 +154,19 @@ function generateDOCX(tID,data,outputPath,outputName,callback){
             errorMsg:"Не удалось сохранить файл результата!"});
         return;
     }
-    callback({result:"Template generate SUCCESS.",userMsg:"Документ по шаблону успешно создан."});
+    callback({generateResult:"Template generate SUCCESS.",userMsg:"Документ по шаблону успешно создан."});
+}
+function storeHistory(tID,data){
+    var lastItems=getTemplateLastItemsByDate(tID,1);
+    var lastItem;
+    if(lastItems)lastItem=lastItems[0];
+    if(lastItem){
+        var equals=true;
+        for(var tfID in data) if(data[tfID]!=lastItem[tfID]) {
+            equals=false; break;
+        }
+        if(equals) return;
+    }
+    historyDB.get('templates').push({id:tID,datetime:new Date(),data:data}).value();
+    historyDB.write(); historyDB.read();
 }
