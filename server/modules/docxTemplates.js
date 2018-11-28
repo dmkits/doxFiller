@@ -59,7 +59,7 @@ module.exports.init= function(app) {
             for(var tfID in tFields){
                 tFieldsParams[tfID]=tfID+" "+tFields[tfID];
             }
-            res.send({fields:tFieldsParams});
+            res.send({fields:tFieldsParams,files:tmplData.files});
             return;
         }else if(action=="getTemplateParamsHistory"){
             var tmpls=server.getConfigTemplates(), tmplData, tFields;
@@ -84,7 +84,7 @@ module.exports.init= function(app) {
         }
         res.send({error:"UNKNOWN URI action!"});
     });
-    app.post("/docxTemplates/*", function (req, res) {                                  //console.log("docxTemplates post data=",req.body);
+    app.post("/docxTemplates/*", function (req, res) {                                              //console.log("docxTemplates post data=",req.body);
         if(!req.params){
             res.send({error:"UNKNOWN URI!"});
             return;
@@ -105,15 +105,26 @@ module.exports.init= function(app) {
                 res.send({error:"NO finded template data by template ID!",errorMsg:"Нет заданы параметры для шаблона!"});
                 return;
             }
-            if(!tmplData.outputPath||!tmplData.outputName){
-                res.send({error:"NO path or/and name for store template docx!",errorMsg:"Для шаблона не заданы параметры сохранения результата!"});
+            if(!tmplData.outputPath){
+                res.send({error:"NO path for store template docx!",errorMsg:"Для шаблона не задан путь для сохранения результата!"});
                 return;
             }
-            storeHistory(tID,req.body);
-            generateDOCX(tID,req.body,tmplData.outputPath,tmplData.outputName,function(result){
+            if(!req.body||!req.body.values){
+                res.send({error:"NO data values for generate template docx!",errorMsg:"Для заполнения шаблона нет значений!"});
+                return;
+            }
+            if(!req.body.files){
+                res.send({error:"NO files for generate template docx!",errorMsg:"Не указаны файлы шаблонов для генерации!"});
+                return;
+            }
+            storeHistory(tID,req.body.values);
+
+
+            generateDOCX(tID,req.body.values,tmplData.outputPath,tmplData.outputName,function(result){
                 result["storeHistoryResult"]="SUCCESS";
                 res.send(result);
             });
+
             return;
         }
         res.send({error:"UNKNOWN URI action!"});

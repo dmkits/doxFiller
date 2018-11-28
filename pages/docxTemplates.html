@@ -25,8 +25,8 @@
 </body>
 <script type="text/javascript">
     require(["app/app", "dojo/dom-style", "dijit/layout/BorderContainer", "dijit/layout/LayoutContainer", "dijit/layout/ContentPane",
-                "dijit/form/Button", "dijit/form/TextBox", "app/request", "app/dialogs", "app/hTableSimpleFiltered"],
-            function (APP, domStyle, BorderContainer, LayoutContainer, ContentPane, Button, TextBox, Request, Dialogs, HTable) {
+                "dijit/form/Button", "dijit/form/TextBox", "app/request", "app/dialogs", "app/hTableSimpleFiltered", "dijit/ConfirmDialog","dijit/form/CheckBox"],
+            function (APP, domStyle, BorderContainer, LayoutContainer, ContentPane, Button, TextBox, Request, Dialogs, HTable, ConfirmDialog,CheckBox) {
                 var pageContainer= APP.instanceForID("docxTemplates_PageContainer", BorderContainer, {});
                 var contentPaneDetail= APP.instanceForID("docxTemplates_ContentPaneDetailContainer", ContentPane, {region:'center'});
                 var contentPaneParamsHistory= APP.instanceForID("docxTemplates_ContentPaneParamsHistory", LayoutContainer, {region:'bottom', splitter:true});
@@ -57,70 +57,166 @@
                             function(result){                                                       console.log(pageID+".getTemplateData result=",result);
                                 if(result===undefined||result==null) result = [];
                                 if(!result.fields) return;
-                                var tr,td,div, label,input,textBox, button;
-                                var table= contentPaneDetail.domNode.getElementsByTagName("table")[0];
-                                for(var tfID in result.fields){
-                                    var tTitle=result.fields[tfID];
-                                    table.appendChild(tr=document.createElement("tr"));
-                                    tr.appendChild(td=document.createElement("td"));
-                                    td.appendChild(div=document.createElement("div"));td.setAttribute("style","text-align:right");
-                                    div.appendChild(label=document.createElement("label"));
-                                    label.setAttribute("for",pageID+tfID);label.innerHTML=tTitle;
-                                    tr.appendChild(td=document.createElement("td"));
-                                    td.appendChild(div=document.createElement("div"));
-                                    div.appendChild(input=document.createElement("input"));
-                                    input.setAttribute("id",pageID+tfID);
-                                    textBox=new TextBox({id:pageID+tfID,style:"width:450px;"},pageID+tfID);
-                                    contentPaneDetail.textBoxes[tfID]=textBox;
-                                }
-                                table.appendChild(tr=document.createElement("tr"));
-                                tr.appendChild(document.createElement("td"));
-                                tr.appendChild(td=document.createElement("td"));
-                                td.appendChild(div=document.createElement("div"));
-                                div.appendChild(button=document.createElement("button"));
-                                button.setAttribute("id",pageID+"btnSendDataAndGenDocx");button.innerText="Сгенерировать документ";
-                                button=new Button({id:pageID+"btnSendDataAndGenDocx",style:"width:300px;"},pageID+"btnSendDataAndGenDocx");
-                                button.onClick=function(){
-                                    var sendingData={};
-                                    for(var tID in contentPaneDetail.textBoxes){
-                                        sendingData[tID]=contentPaneDetail.textBoxes[tID].get("value");
-                                    }
-                                    Request.postJSONData({url:"/docxTemplates/"+pageID+"/sendDataAndGenDocx", data:sendingData, consoleLog:true},
-                                            function(result){
-                                                if(result.generateResult){
-                                                    var userMsg=result.userMsg;
-                                                    if(!userMsg) userMsg="НЕИЗВЕСТНО.";
-                                                    Dialogs.doRequestFailDialog({title:"Результат операции",content:userMsg});
-                                                } else {
-                                                    Dialogs.doRequestFailDialog({title:"Внимание",content:"Не удалось получить результат операции с сервера!"});
-                                                }
-                                                if(result.storeHistoryResult=="SUCCESS")contentPaneParamsHistory.loadParamsHistory();
-                                            });
-                                    };
-                                    contentPaneParamsHistory.loadParamsHistory();
+                                contentPaneDetail.filesForGenerateTemplates=result.files;
+                                contentPaneDetail.createTemplateValuesContent(result.fields);
+                                contentPaneParamsHistory.loadParamsHistory();
                             });
                 };
+                contentPaneDetail.createTemplateValuesContent = function(templateFields){
+                    var tr,td,div, label,input,textBox, button;
+                    var table= contentPaneDetail.domNode.getElementsByTagName("table")[0];
+                    for(var tfID in templateFields){
+                        var tTitle=templateFields[tfID];
+                        table.appendChild(tr=document.createElement("tr"));
+                        tr.appendChild(td=document.createElement("td"));
+                        td.appendChild(div=document.createElement("div"));td.setAttribute("style","text-align:right");
+                        div.appendChild(label=document.createElement("label"));
+                        label.setAttribute("for",pageID+tfID);label.innerHTML=tTitle;
+                        tr.appendChild(td=document.createElement("td"));
+                        td.appendChild(div=document.createElement("div"));
+                        div.appendChild(input=document.createElement("input"));
+                        input.setAttribute("id",pageID+tfID);
+                        textBox=new TextBox({id:pageID+tfID,style:"width:450px;"},pageID+tfID);
+                        contentPaneDetail.textBoxes[tfID]=textBox;
+                    }
+                    table.appendChild(tr=document.createElement("tr"));
+                    tr.appendChild(document.createElement("td"));
+                    tr.appendChild(td=document.createElement("td"));
+                    td.appendChild(div=document.createElement("div"));
+                    div.appendChild(button=document.createElement("button"));
+                    button.setAttribute("id",pageID+"btnSendDataAndGenDocx");button.innerText="Сгенерировать документ";
+                    button=new Button({id:pageID+"btnSendDataAndGenDocx",style:"width:300px;"},pageID+"btnSendDataAndGenDocx");
+                    button.onClick=contentPaneDetail.doGenerateTemplates;
+                };
+
+                contentPaneDetail.doGenerateTemplates= function(){
+                    var filesForGenerateTemplates=contentPaneDetail.filesForGenerateTemplates;          console.log("doGenerateTemplates filesForGenerateTemplates=",filesForGenerateTemplates);
+                    if(!filesForGenerateTemplates||filesForGenerateTemplates.length==0){
+                        Dialogs.doRequestFailDialog({title:"Внимание",
+                            content:"Нет списка шаблонов для генерации!<br>Выполнение генерации невозможно."});
+                        return;
+                    }
+                    var dialogContent=[
+                        {type:"text",style:"font-weight:bold;font-size:14;text-align:center",value:"Выберите шаблоны для генерации документов:"},
+//                        {type:"textbox",label:"шаблон1",width:100,value:"123"},
+//                        {type:"checkbox",label:"шаблон123 sdfds;lf, sdflksdkl;f sdfkldsklfj",width:250,value:"1"}
+                    ];
+                    for(var i in filesForGenerateTemplates){
+                        var fileName=filesForGenerateTemplates[i];
+                        dialogContent.push({type:"checkbox",label:fileName.replace(".docx","").replace(".doc",""),value:fileName,
+                            style:"text-align:center"});
+                    }
+                    contentPaneDetail.doDialogSimpleTextBox({title:"Генерация документов по шаблонам",style:"min-width:350px;",
+                                contentStyle:"font-size:12px;",content:dialogContent,btnOkLabel:"Генерировать",btnCancelLabel:"Отмена"},
+                            function(dialog, content){
+//                                            contentPaneDetail.doGenerateTemplates;
+                            });
+                };
+                /**
+                 * DMKITS 2016.02.29 v.1.1
+                 * @param params = {title, style, btnOkLabel, btnCancelLabel, contentStyle, content}
+                 * content = [{type:text/textbox/checkbox ,label, width, style, disabled, value},{...},}, {...}, {...}, ...]
+                 *  or content = {item1:{type:textbox ,label, width, disabled, value}, item2:{...}, item3:{...}, ...}
+                 * on execute (click OK button) call onExecute(Dialog, content), content parameter contains value: content = {item1:{...,value}, ...}
+                 * @param onExecute
+                 * @param onCancel
+                 */
+                contentPaneDetail.doDialogSimpleTextBox= function(params, onExecute, onCancel) {
+                    var myDialog = APP.instance("DialogSimpleTextBox", ConfirmDialog, {});
+                    if (params.title) myDialog.set("title", params.title);
+                    if (params.style) myDialog.set("style", params.style);
+                    if (params.btnOkLabel) myDialog.set("buttonOk", params.btnOkLabel);
+                    if (params.btnCancelLabel) myDialog.set("buttonCancel", params.btnCancelLabel);
+                    var content = params.content, contentStyle=params.contentStyle;
+                    var dlgСontent = "<table width=\"100%\""+((contentStyle)?" style=\""+contentStyle+"\"":"")+">";
+                    for (var item in content) {
+                        var dlgContentType=content[item].type,dlgContentLabel=content[item].label,dlgContentStyle=content[item].style;
+                        dlgСontent = dlgСontent + "<tr><td"+((dlgContentType=="text")?" colspan=2":"")+((dlgContentStyle)?" style=\""+dlgContentStyle+"\"":"")+">";
+                        var contentname = "DialogSimpleTextBox_"+dlgContentType + item;
+                        content[item].name = contentname;
+                        if (dlgContentLabel&&(dlgContentType=="textbox"||dlgContentType=="checkbox")) {
+                            var labelTag= document.createElement("label");labelTag.setAttribute("for",contentname);labelTag.innerText=dlgContentLabel;
+//                            labelTag.onclick=function(){                                    console.log("this",this);
+//                                this.checked=!this.checked;
+//                                if(this.checked)this.style["font-weight"]="bold";this.style["font-weight"]="inherit";
+//                            };
+//                            dlgСontent = dlgСontent + "<label for=\"" + contentname + "\">" + dlgContentLabel + "</label>";
+                            dlgСontent = dlgСontent + labelTag.outerHTML;
+                            content[item].labelTag=labelTag;
+                        }else if (dlgContentType == "text") {
+//                            dlgСontent = dlgСontent + "<span"+((dlgContentStyle)?" style=\""+dlgContentStyle+"\"":"")+">" + content[item].value + "</span>";
+                            dlgСontent = dlgСontent + "<span>" + content[item].value + "</span>";
+                        }
+                        dlgСontent = dlgСontent + "</td>";
+                        if (dlgContentType == "text")continue;
+                        dlgСontent = dlgСontent + "<td>";
+                        if (dlgContentType == "textbox"||dlgContentType == "checkbox") {
+                            dlgСontent = dlgСontent + "<input id=\"" + contentname + "\"/>";//type=\"text\"
+                        }
+                        dlgСontent = dlgСontent + "</td></tr>";
+                    }
+                    dlgСontent = dlgСontent + "</table>";
+                    myDialog.set("content", dlgСontent);
+                    for (var item in content) {
+                        var dlgContentType=content[item].type,contentname=content[item].name;
+                        if (dlgContentType == "textbox") {
+                            var dialogtextbox = APP.instanceForID(contentname, TextBox, {type: "text"});
+                            if (content[item].value) dialogtextbox.set("value", content[item].value);
+                            if (content[item].disabled) dialogtextbox.set("disabled", true); else dialogtextbox.set("disabled", false);
+                            var width = content[item].width;
+                            if (width) dialogtextbox.set("style", "width:" + width+"px;");
+                            content[item].textbox = dialogtextbox;
+                        }else if (dlgContentType == "checkbox") {
+                            var dialogCheckbox = APP.instanceForID(contentname, CheckBox, {checked:false});
+//                            if (content[item].value) dialogCheckbox.set("value", content[item].value);
+//                            if (content[item].disabled) dialogCheckbox.set("disabled", true); else dialogCheckbox.set("disabled", false);
+                            var width = content[item].width;
+//                            if (width) dialogCheckbox.set("style", "width:" + width+"px;");
+                            labelTag=content[item].labelTag;
+                            if(labelTag)
+                                dialogCheckbox.onChange= function(checked){                         console.log(checked,"labelTag",labelTag);
+                                    if(checked){
+                                        labelTag.style["font-weight"]="bold"; labelTag.style["text-decoration"]="underline";
+                                    }else{
+                                        labelTag.style["font-weight"]="inherit"; labelTag.style["text-decoration"]="inherit";
+                                    }
+                                };
+                            content[item].checkbox = dialogCheckbox;
+                        }
+                    }
+                    if (onCancel != null) myDialog.onCancel = function () {
+                        onCancel(myDialog);
+                    };
+                    if (onExecute != null) myDialog.onExecute = function () {
+                        var content = params.content;
+                        for (var item in content) {
+                            if (content[item].type == "textbox") {
+                                content[item].value = content[item].textbox.value;
+                            }
+                        }
+                        onExecute(myDialog, content);
+                    };
+                    myDialog.show()
+                };
+                contentPaneDetail.startGenerateTemplates= function(){
+                    var sendingData={};
+                    for(var tID in contentPaneDetail.textBoxes){
+                        sendingData[tID]=contentPaneDetail.textBoxes[tID].get("value");
+                    }
+                    Request.postJSONData({url:"/docxTemplates/"+pageID+"/sendDataAndGenDocx", data:{values:sendingData,files:""}, consoleLog:true},
+                            function(result){
+                                if(result.generateResult){
+                                    var userMsg=result.userMsg;
+                                    if(!userMsg) userMsg="НЕИЗВЕСТНО.";
+                                    Dialogs.doRequestFailDialog({title:"Результат операции",content:userMsg});
+                                } else {
+                                    Dialogs.doRequestFailDialog({title:"Внимание",content:"Не удалось получить результат операции с сервера!"});
+                                }
+                                if(result.storeHistoryResult=="SUCCESS")contentPaneParamsHistory.loadParamsHistory();
+                            });
+                };
+
                 contentPaneDetail.setTemplateContent();
-//                var btnProdsRems= APP.instanceForID("docxTemplates_btnProdsRems", Button, {},{"width":"150px"});
-//                var btnProdsMoves= APP.instanceForID("docxTemplates_btnProdsMoves", Button, {},{"width":"150px"});
-//                var contentPaneDetailContainer= APP.instanceForID("docxTemplates_ContentPaneDetailContainer", StackContainer, {region:'center'});
-//                btnProdsRems.onClick= function(){
-//                    if (!btnProdsRems.report){
-//                        btnProdsRems.report = APP.childFor(contentPaneDetailContainer, "docxTemplates_tableProdsRems",
-//                                TDocSimpleTable, {titleText:"Текущие остатки товаров", dataURL:"/reports/prodsRems/getProductsRems",
-//                                    buttonPrint:false, buttonExportToExcel:false})
-//                                .addSelectBox("Склад",{valueItemName:"StockID", labelItemName:"StockName",
-//                                    loadDropDownURL:"/reports/cashier/getDirStocksForSelect",
-//                                    contentTableCondition:"StockID="/*, width:300*/})
-//                                .addCheckBtnCondition("Не нулевые",{width:90,contentTableConditions:{"SUM(Qty)<>":"0"}})
-//                                .addCheckBtnCondition("Все",{width:85})
-//                                .addCheckBtnCondition("Нулевые",{width:70,contentTableConditions:{"SUM(Qty)~":"0"}})
-//                                .addTotalCountNumberBox("ИТОГО строк:", 140)
-//                                .addTotalSumNumberTextBox("ИТОГО остаток:", 1160, "TQty", {style:"font-weight:bold;"})
-//                                .startUp();
-//                    }
-//                    contentPaneDetailContainer.selectChild(btnProdsRems.report);
-//                };
                 pageContainer.layout();
         });
 </script>
