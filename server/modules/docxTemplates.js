@@ -78,8 +78,8 @@ module.exports.init= function(app) {
             ];
             for(var tfID in tFields){
                 tTableParamsHistory.push({data:tfID, name:tfID, width:250, type:"text"});
-            }
-            res.send({columns:tTableParamsHistory,identifier:tTableParamsHistory[0].data,items:getTemplateLastItemsByDate(tID,100)});//console.log("getTemplateLastItemsByDate=",getTemplateLastItemsByDate(tID,2));
+            }                                                                                       //console.log("getTemplateLastItemsByDate=",getTemplateLastItemsByDate(tID,2));
+            res.send({columns:tTableParamsHistory,identifier:tTableParamsHistory[0].data,items:getTemplateLastItemsByDate(tID,100)});
             return;
         }
         res.send({error:"UNKNOWN URI action!"});
