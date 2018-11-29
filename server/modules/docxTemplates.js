@@ -126,7 +126,7 @@ module.exports.init= function(app) {
             if(!req.body.files){
                 res.send({error:"NO files for generate template docx!",errorMsg:"Не указаны файлы шаблонов для генерации!"});
                 return;
-            }                                                                                       console.log("sendDataAndGenDocx values=",values," files=",req.body.files);
+            }                                                                                       log.info("docxTemplates sendDataAndGenDocx values=",values," files=",req.body.files);
             var storeHistoryResult="SUCCESS";
             try{
                 storeHistory(tID,values);
