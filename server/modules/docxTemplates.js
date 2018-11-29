@@ -1,6 +1,6 @@
 var JSZip = require('jszip'), Docxtemplater = require('docxtemplater');
 var fs = require('fs'), path = require('path');
-var server= require("../server");
+var server= require("../server"), log= server.log;
 
 global.appDocxTemplates= path.join(__dirname,'/../../docxTemplates/','');
 
