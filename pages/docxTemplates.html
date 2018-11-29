@@ -39,7 +39,7 @@
                     contentPaneParamsHistory.hTableParamsHistory.onUpdateContent= function() {
                         contentPaneParamsHistory.hTableParamsHistory.setSelectedRow(0);
                     };
-                    contentPaneParamsHistory.hTableParamsHistory.onSelect = function (firstSelectedRowData, selection) {      console.log("hTableParamsHistory.onSelect ",firstSelectedRowData);
+                    contentPaneParamsHistory.hTableParamsHistory.onSelect = function (firstSelectedRowData, selection) {      //console.log("hTableParamsHistory.onSelect ",firstSelectedRowData);
                         this.setSelection(firstSelectedRowData, selection);
                         if(!firstSelectedRowData) return;
                         for(var tfID in firstSelectedRowData){
@@ -89,7 +89,7 @@
                     button.onClick=contentPaneDetail.doGenerateTemplates;
                 };
                 contentPaneDetail.doGenerateTemplates= function(){
-                    var filesForGenerateTemplates=contentPaneDetail.filesForGenerateTemplates;          console.log("doGenerateTemplates filesForGenerateTemplates=",filesForGenerateTemplates);
+                    var filesForGenerateTemplates=contentPaneDetail.filesForGenerateTemplates;          //console.log("doGenerateTemplates filesForGenerateTemplates=",filesForGenerateTemplates);
                     if(!filesForGenerateTemplates||filesForGenerateTemplates.length==0){
                         Dialogs.doRequestFailDialog({title:"Внимание",
                             content:"Нет списка шаблонов для генерации!<br>Выполнение генерации невозможно."});
@@ -107,13 +107,13 @@
                     }
                     contentPaneDetail.doDialogSimpleTextBox({title:"Генерация документов по шаблонам",style:"min-width:350px;",
                                 contentStyle:"font-size:12px;",content:dialogContent,btnOkLabel:"Генерировать",btnCancelLabel:"Отмена"},
-                            function(dialog, content){                                                          console.log("content",content);
+                            function(dialog, content){                                                          //console.log("content",content);
                                 var files;
                                 for(var item in content){
                                     var contentItem=content[item];
                                     if(!contentItem||contentItem.type!="checkbox"||!contentItem.checked) continue;
                                     if(!files)files=[contentItem.value]; else files.push(contentItem.value);
-                                }                                                                           console.log("files",files);
+                                }                                                                               //console.log("files",files);
                                 //if(!files )
                                 dialog.hide();
                                 contentPaneDetail.startGenerateTemplates(files)

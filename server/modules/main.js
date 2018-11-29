@@ -15,11 +15,11 @@ function getMenu(templates){
             menuBarItem.pageTitle= t["title"];
             menuBarItem.action= "open";
             menuBarItem.contentHref = "/docxTemplates/"+tID;
+            menuBarItem.closable=true;
         }
         menuBar.push(menuBarItem);
     }
     menuBar.push({ menuItemName:"menuBarItemHelpAbout", menuTitle:"О программе", action:"help_about" });
-    menuBar.push({ menuItemName:"menuBarItemClose", menuTitle:"Выход", action:"close" });
     return menuBar;
 }
 

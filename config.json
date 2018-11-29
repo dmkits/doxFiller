@@ -1,5 +1,8 @@
 {
-  "title":".docx Filler",
+  "title":"Генерация шаблонов",
+  "icon32x32":"icons/word-ico32.png",
+  "imageSmall":"imgs/word-small.png",
+  "imageMain":"imgs/word1.jpg",
   "modules":[
     "sysadmin",
     "main",

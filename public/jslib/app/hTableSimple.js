@@ -414,7 +414,7 @@ define(["dojo/_base/declare", "dijit/layout/ContentPane","dojox/widget/Standby",
              * if duplexRequest=false, sends only one request to get table data with columns data.
              * if clearContentBeforeLoad==true content clearing before send request for table data
              */
-            setContentFromUrl: function(params){                                                                console.log("HTableSimple setContentFromUrl ",params);
+            setContentFromUrl: function(params){                                                                //console.log("HTableSimple setContentFromUrl ",params);
                 var instance = this;
                 if (!params) {
                     this.updateContent(null);

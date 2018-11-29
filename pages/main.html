@@ -72,7 +72,8 @@
                                 var eConfigName = document.getElementById("main_configName");
                                 if(result.title)document.title=result.title;
                                 if(result.icon32x32) changeFavicon(result.icon32x32);
-                                if(result.imageSmall)main_TopImg.set("style","background-image: url(\""+result.imageSmall+"\")");
+                                if(result.imageSmall)main_TopImg.set("style","background-image: url(\""+result.imageSmall+"\")");                           console.log(main_ContentContainer.domNode,main_ContentContainer.domNode.lastChild);
+                                if(result.imageMain)main_ContentContainer.domNode.children[main_ContentContainer.domNode.children.length-1].style["background-image"]="url(\""+result.imageMain+"\")";
                                 if(result.mode && result.mode.indexOf("production")<0) {
                                     var mode_str = result.mode_str;
                                     if (!mode_str) mode_str= result.mode;
