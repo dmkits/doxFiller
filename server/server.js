@@ -78,8 +78,11 @@ module.exports.loadServerConfiguration= loadServerConfiguration;                
 module.exports.getServerConfig= function(){ return serverConfig };
 module.exports.setAppConfig= function(newAppConfig){ serverConfig=newAppConfig; };
 
-var configFileName=(serverConfig&&serverConfig.configName)?serverConfig.configName:'config.json';
-var config=JSON.parse(common.getJSONWithoutComments(fs.readFileSync('./'+configFileName,'utf-8')));
+var configFileName=(serverConfig&&serverConfig.configName)?serverConfig.configName:'config.json', config=null;
+try{
+    var config=JSON.parse(common.getJSONWithoutComments(fs.readFileSync('./'+configFileName,'utf-8')));
+}catch(e){                                                                                           log.error('CONFIG ERROR! Reson:',e.message);log.error('SERVER START FAIL!');return;
+}
 module.exports.getConfig=function(){ return config; };
 module.exports.getConfigModules=function(){ return (config&&config.modules)?config.modules:null; };
 module.exports.getConfigTemplates=function(){ return (config&&config.templates)?config.templates:null; };

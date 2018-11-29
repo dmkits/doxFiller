@@ -8,7 +8,9 @@ module.exports.getValidateError= function(){ return validateError; };
  */
 module.exports.validateModules= function(resultCallback){
     var modules= server.getConfigModules();
-    if (!modules) return;
+    if (!modules) {
+        resultCallback(); return;
+    }
     var validateModuleCallback= function(modules, index, errs){
         var moduleName= modules[index];
         if (!moduleName) {
