@@ -98,55 +98,70 @@ module.exports.init= function(app) {
             res.send({error:"NO URI action!"});
             return;
         }
-        if(action=="sendDataAndGenDocx"){
+        if(action=="sendDataAndGenDocx"){                                                           //console.log("sendDataAndGenDocx",req.body);
             var tmpls=server.getConfigTemplates(), tmplData, tFields;
             if(tmpls)tmplData=tmpls[tID];
             if(!tmplData){
-                res.send({error:"NO finded template data by template ID!",errorMsg:"Нет заданы параметры для шаблона!"});
+                res.send({error:"NO finded template data by template ID!",errorMsg:"В конфигурации не заданы параметры для шаблона!"});
+                return;
+            }
+            if(!tmplData.directory){
+                res.send({error:"NO path with templates!",errorMsg:"В конфигурации не указан путь расположения шаблонов!"});
                 return;
             }
             if(!tmplData.outputPath){
-                res.send({error:"NO path for store template docx!",errorMsg:"Для шаблона не задан путь для сохранения результата!"});
+                res.send({error:"NO path for store template docx!",errorMsg:"В конфигурации не указан путь для сохранения результата!"});
                 return;
             }
             if(!req.body||!req.body.values){
                 res.send({error:"NO data values for generate template docx!",errorMsg:"Для заполнения шаблона нет значений!"});
                 return;
             }
+            try{
+                var values=JSON.parse(req.body.values);
+            }catch(e){
+                res.send({error:"Data values not valid for generate template docx!",errorMsg:"Для заполнения шаблона указанные значения недопустимы!"});
+                return;
+            }
             if(!req.body.files){
                 res.send({error:"NO files for generate template docx!",errorMsg:"Не указаны файлы шаблонов для генерации!"});
                 return;
+            }                                                                                       console.log("sendDataAndGenDocx values=",values," files=",req.body.files);
+            var storeHistoryResult="SUCCESS";
+            try{
+                storeHistory(tID,values);
+            }catch(e){
+                storeHistoryResult="ERROR";
             }
-            storeHistory(tID,req.body.values);
-
-
-            generateDOCX(tID,req.body.values,tmplData.outputPath,tmplData.outputName,function(result){
-                result["storeHistoryResult"]="SUCCESS";
+            generateDOCX(0,values,req.body.files,tmplData.directory,tmplData.outputPath,function(result){
+                if(!result) result={generateResult:true,userMsg:"Все документы по шаблонам успешно созданы!",storeHistoryResult:storeHistoryResult};
                 res.send(result);
             });
-
             return;
         }
         res.send({error:"UNKNOWN URI action!"});
     });
 };
 
-function generateDOCX(tID,data,outputPath,outputName,callback){
-    if(!data) {
+function generateDOCX(ind,values,files,directory,outputPath,callback){
+    if(!files||!files[ind]){
+        callback(); return;
+    }
+    if(!values) {
         callback({error:"No data for generate docx!",errorMsg:"Нет данных для создания документа по шаблону!"});
         return;
     }
-    var content;
+    var filename=files[ind], content;
     try {//Load the docx file as a binary
-        content = fs.readFileSync(path.resolve(appDocxTemplates, tID+'.docx'), 'binary');
+        content = fs.readFileSync(path.resolve(directory, filename), 'binary');
     } catch (error) {
         callback({error:"Failed load template docx file! Reason:"+error.message,
-            errorMsg:"Не удалось найти (загрузить для обработки) файл шаблона!"});
+            errorMsg:"Не удалось найти (загрузить для обработки) файл шаблона '"+file+"'!"});
         return;
     }
     var zip = new JSZip(content), doc = new Docxtemplater();
     doc.loadZip(zip);
-    doc.setData(data);//set the templateVariables
+    doc.setData(values);//set the templateVariables
     try {// render the document (replace all occurences of {first_name} by John, {last_name} by Doe, ...)
         doc.render()
     } catch (error) {
@@ -159,13 +174,13 @@ function generateDOCX(tID,data,outputPath,outputName,callback){
     }
     var buf = doc.getZip().generate({type: 'nodebuffer'});
     try {// buf is a nodejs buffer, you can either write it to a file or do anything else with it.
-        fs.writeFileSync(path.resolve(outputPath, outputName+'.docx'), buf);
+        fs.writeFileSync(path.resolve(outputPath, filename), buf);
     } catch (error) {
         callback({error:"Failed store result docx file! Reason:"+error.message,
             errorMsg:"Не удалось сохранить файл результата!"});
         return;
     }
-    callback({generateResult:"Template generate SUCCESS.",userMsg:"Документ по шаблону успешно создан."});
+    generateDOCX(ind+1,values,files,directory,outputPath,callback);
 }
 function storeHistory(tID,data){
     var lastItems=getTemplateLastItemsByDate(tID,1);

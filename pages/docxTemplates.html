@@ -88,7 +88,6 @@
                     button=new Button({id:pageID+"btnSendDataAndGenDocx",style:"width:300px;"},pageID+"btnSendDataAndGenDocx");
                     button.onClick=contentPaneDetail.doGenerateTemplates;
                 };
-
                 contentPaneDetail.doGenerateTemplates= function(){
                     var filesForGenerateTemplates=contentPaneDetail.filesForGenerateTemplates;          console.log("doGenerateTemplates filesForGenerateTemplates=",filesForGenerateTemplates);
                     if(!filesForGenerateTemplates||filesForGenerateTemplates.length==0){
@@ -103,19 +102,27 @@
                     ];
                     for(var i in filesForGenerateTemplates){
                         var fileName=filesForGenerateTemplates[i];
-                        dialogContent.push({type:"checkbox",label:fileName.replace(".docx","").replace(".doc",""),value:fileName,
+                        dialogContent.push({type:"checkbox",label:fileName.replace(".docx","").replace(".doc",""),value:fileName,checked:false,
                             style:"text-align:center"});
                     }
                     contentPaneDetail.doDialogSimpleTextBox({title:"Генерация документов по шаблонам",style:"min-width:350px;",
                                 contentStyle:"font-size:12px;",content:dialogContent,btnOkLabel:"Генерировать",btnCancelLabel:"Отмена"},
-                            function(dialog, content){
-//                                            contentPaneDetail.doGenerateTemplates;
+                            function(dialog, content){                                                          console.log("content",content);
+                                var files;
+                                for(var item in content){
+                                    var contentItem=content[item];
+                                    if(!contentItem||contentItem.type!="checkbox"||!contentItem.checked) continue;
+                                    if(!files)files=[contentItem.value]; else files.push(contentItem.value);
+                                }                                                                           console.log("files",files);
+                                //if(!files )
+                                dialog.hide();
+                                contentPaneDetail.startGenerateTemplates(files)
                             });
                 };
                 /**
                  * DMKITS 2016.02.29 v.1.1
                  * @param params = {title, style, btnOkLabel, btnCancelLabel, contentStyle, content}
-                 * content = [{type:text/textbox/checkbox ,label, width, style, disabled, value},{...},}, {...}, {...}, ...]
+                 * content = [{type:text/textbox/checkbox ,label, width, style, disabled, value, checked},{...},}, {...}, {...}, ...]
                  *  or content = {item1:{type:textbox ,label, width, disabled, value}, item2:{...}, item3:{...}, ...}
                  * on execute (click OK button) call onExecute(Dialog, content), content parameter contains value: content = {item1:{...,value}, ...}
                  * @param onExecute
@@ -128,60 +135,58 @@
                     if (params.btnOkLabel) myDialog.set("buttonOk", params.btnOkLabel);
                     if (params.btnCancelLabel) myDialog.set("buttonCancel", params.btnCancelLabel);
                     var content = params.content, contentStyle=params.contentStyle;
-                    var dlgСontent = "<table width=\"100%\""+((contentStyle)?" style=\""+contentStyle+"\"":"")+">";
+                    var dlgTable=document.createElement("table");
+                    dlgTable.width="100%";if(contentStyle)dlgTable.style=contentStyle;
                     for (var item in content) {
-                        var dlgContentType=content[item].type,dlgContentLabel=content[item].label,dlgContentStyle=content[item].style;
-                        dlgСontent = dlgСontent + "<tr><td"+((dlgContentType=="text")?" colspan=2":"")+((dlgContentStyle)?" style=\""+dlgContentStyle+"\"":"")+">";
+                        var dlgContentType=content[item].type,dlgContentLabel=content[item].label,dlgContentStyle=content[item].style,
+                                dlgTableTR,dlgTableTD,dlgСontentTag;
+                        dlgTable.appendChild(dlgTableTR=document.createElement("tr"));dlgTableTR.appendChild(dlgTableTD=document.createElement("td"));
+                        if(dlgContentStyle)dlgTableTD.style=dlgContentStyle;
                         var contentname = "DialogSimpleTextBox_"+dlgContentType + item;
                         content[item].name = contentname;
-                        if (dlgContentLabel&&(dlgContentType=="textbox"||dlgContentType=="checkbox")) {
-                            var labelTag= document.createElement("label");labelTag.setAttribute("for",contentname);labelTag.innerText=dlgContentLabel;
-//                            labelTag.onclick=function(){                                    console.log("this",this);
-//                                this.checked=!this.checked;
-//                                if(this.checked)this.style["font-weight"]="bold";this.style["font-weight"]="inherit";
-//                            };
-//                            dlgСontent = dlgСontent + "<label for=\"" + contentname + "\">" + dlgContentLabel + "</label>";
-                            dlgСontent = dlgСontent + labelTag.outerHTML;
-                            content[item].labelTag=labelTag;
-                        }else if (dlgContentType == "text") {
-//                            dlgСontent = dlgСontent + "<span"+((dlgContentStyle)?" style=\""+dlgContentStyle+"\"":"")+">" + content[item].value + "</span>";
-                            dlgСontent = dlgСontent + "<span>" + content[item].value + "</span>";
+                        if (dlgContentType == "text") {
+                            dlgTableTD.appendChild(dlgСontentTag=document.createElement("span"));
+                            dlgTableTD.setAttribute("colspan","2");
+                            dlgСontentTag.innerText=content[item].value;
+                        }else if (dlgContentLabel&&(dlgContentType=="textbox"||dlgContentType=="checkbox")) {
+                            dlgTableTD.appendChild(dlgСontentTag=document.createElement("label"));
+                            dlgСontentTag.setAttribute("for",contentname);dlgСontentTag.innerText=dlgContentLabel;
+                            content[item].labelTag=dlgСontentTag;
                         }
-                        dlgСontent = dlgСontent + "</td>";
                         if (dlgContentType == "text")continue;
-                        dlgСontent = dlgСontent + "<td>";
+                        dlgTableTR.appendChild(dlgTableTD=document.createElement("td"));
                         if (dlgContentType == "textbox"||dlgContentType == "checkbox") {
-                            dlgСontent = dlgСontent + "<input id=\"" + contentname + "\"/>";//type=\"text\"
+                            dlgTableTD.appendChild(dlgСontentTag=document.createElement("input"));
+                            dlgСontentTag.id=contentname;//dlgСontentTag.setAttribute("id",contentname);
+                            content[item].elemTag=dlgСontentTag;
                         }
-                        dlgСontent = dlgСontent + "</td></tr>";
                     }
-                    dlgСontent = dlgСontent + "</table>";
-                    myDialog.set("content", dlgСontent);
+                    myDialog.set("content", dlgTable);
                     for (var item in content) {
-                        var dlgContentType=content[item].type,contentname=content[item].name;
+                        var contentItem=content[item], dlgContentType=contentItem.type,contentItemValue=contentItem.value,
+                                elemTag=contentItem.elemTag;
                         if (dlgContentType == "textbox") {
-                            var dialogtextbox = APP.instanceForID(contentname, TextBox, {type: "text"});
-                            if (content[item].value) dialogtextbox.set("value", content[item].value);
-                            if (content[item].disabled) dialogtextbox.set("disabled", true); else dialogtextbox.set("disabled", false);
-                            var width = content[item].width;
+                            var dialogtextbox = APP.instanceFor(elemTag, TextBox, {type: "text"});
+                            if (contentItemValue) dialogtextbox.set("value", contentItemValue);
+                            if (contentItem.disabled) dialogtextbox.set("disabled", true); else dialogtextbox.set("disabled", false);
+                            var width = contentItem.width;
                             if (width) dialogtextbox.set("style", "width:" + width+"px;");
-                            content[item].textbox = dialogtextbox;
+                            contentItem.textbox = dialogtextbox;
                         }else if (dlgContentType == "checkbox") {
-                            var dialogCheckbox = APP.instanceForID(contentname, CheckBox, {checked:false});
-//                            if (content[item].value) dialogCheckbox.set("value", content[item].value);
-//                            if (content[item].disabled) dialogCheckbox.set("disabled", true); else dialogCheckbox.set("disabled", false);
+                            var dialogCheckbox = APP.instanceFor(elemTag, CheckBox, {checked:false});
+                            if (contentItemValue) dialogCheckbox.set("value", contentItemValue);
+                            if (contentItem.checked) dialogCheckbox.set("checked", true); else dialogCheckbox.set("checked", false);
                             var width = content[item].width;
-//                            if (width) dialogCheckbox.set("style", "width:" + width+"px;");
-                            labelTag=content[item].labelTag;
-                            if(labelTag)
-                                dialogCheckbox.onChange= function(checked){                         console.log(checked,"labelTag",labelTag);
-                                    if(checked){
-                                        labelTag.style["font-weight"]="bold"; labelTag.style["text-decoration"]="underline";
-                                    }else{
-                                        labelTag.style["font-weight"]="inherit"; labelTag.style["text-decoration"]="inherit";
+                            dialogCheckbox.labelTag=contentItem.labelTag;
+                            if(dialogCheckbox.labelTag)
+                                dialogCheckbox.onChange= function(checked){
+                                    if(checked&&this.labelTag){
+                                        this.labelTag.style["font-weight"]="bold"; this.labelTag.style["text-decoration"]="underline";
+                                    }else if(this.labelTag){
+                                        this.labelTag.style["font-weight"]="inherit"; this.labelTag.style["text-decoration"]="inherit";
                                     }
                                 };
-                            content[item].checkbox = dialogCheckbox;
+                            contentItem.checkbox = dialogCheckbox;
                         }
                     }
                     if (onCancel != null) myDialog.onCancel = function () {
@@ -190,24 +195,25 @@
                     if (onExecute != null) myDialog.onExecute = function () {
                         var content = params.content;
                         for (var item in content) {
-                            if (content[item].type == "textbox") {
-                                content[item].value = content[item].textbox.value;
-                            }
+                            var contentItem=content[item],contentType=contentItem.type;
+                            if (contentType=="textbox") contentItem.value = contentItem.textbox.value;
+                            else if (contentType=="checkbox") contentItem.checked = contentItem.checkbox.checked;
                         }
                         onExecute(myDialog, content);
                     };
                     myDialog.show()
                 };
-                contentPaneDetail.startGenerateTemplates= function(){
+                contentPaneDetail.startGenerateTemplates= function(files){
                     var sendingData={};
                     for(var tID in contentPaneDetail.textBoxes){
                         sendingData[tID]=contentPaneDetail.textBoxes[tID].get("value");
-                    }
-                    Request.postJSONData({url:"/docxTemplates/"+pageID+"/sendDataAndGenDocx", data:{values:sendingData,files:""}, consoleLog:true},
+                    }                                                                                 console.log("sendingData=",sendingData," files=",files);
+                    Request.postJSONData({url:"/docxTemplates/"+pageID+"/sendDataAndGenDocx", data:{values:JSON.stringify(sendingData),files:files}, consoleLog:true},
                             function(result){
                                 if(result.generateResult){
                                     var userMsg=result.userMsg;
                                     if(!userMsg) userMsg="НЕИЗВЕСТНО.";
+                                    if(result.storeHistoryResult=="ERROR")userMsg+="<br>Не удалось сохранить значения в истории значений (сохраненные параметры).";
                                     Dialogs.doRequestFailDialog({title:"Результат операции",content:userMsg});
                                 } else {
                                     Dialogs.doRequestFailDialog({title:"Внимание",content:"Не удалось получить результат операции с сервера!"});
@@ -215,7 +221,6 @@
                                 if(result.storeHistoryResult=="SUCCESS")contentPaneParamsHistory.loadParamsHistory();
                             });
                 };
-
                 contentPaneDetail.setTemplateContent();
                 pageContainer.layout();
         });
