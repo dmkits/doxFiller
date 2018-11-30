@@ -74,7 +74,7 @@ module.exports.init= function(app) {
                 return;
             }
             var tTableParamsHistory=[
-                {data:"datetime", name:"Дата", width:100, type:"text",datetimeFormat:"DD.MM.YY HH:mm:ss",align:"center" }
+                {data:"datetime", name:"Дата", width:100, type:"text",datetimeFormat:"DD.MM.YY HH:mm:ss",align:"center", useFilter:false }
             ];
             for(var tfID in tFields){
                 tTableParamsHistory.push({data:tfID, name:tfID, width:250, type:"text"});
@@ -133,7 +133,9 @@ module.exports.init= function(app) {
             }catch(e){
                 storeHistoryResult="ERROR";
             }
-            generateDOCX(0,values,req.body.files,tmplData.directory,tmplData.outputPath,function(result){
+            var files=req.body.files;
+            if(typeof(files)=="string")files=[files];
+            generateDOCX(0,values,files,tmplData.directory,tmplData.outputPath,function(result){
                 if(!result) result={generateResult:true,userMsg:"Все документы по шаблонам успешно созданы!",storeHistoryResult:storeHistoryResult};
                 res.send(result);
             });
@@ -151,6 +153,7 @@ function generateDOCX(ind,values,files,directory,outputPath,callback){
         callback({error:"No data for generate docx!",userErrorMsg:"Нет данных для создания документа по шаблону!"});
         return;
     }
+
     var filename=files[ind], content;
     try {//Load the docx file as a binary
         content = fs.readFileSync(path.resolve(directory, filename), 'binary');
