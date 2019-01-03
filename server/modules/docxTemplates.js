@@ -9,6 +9,10 @@ const FileSync = require('lowdb/adapters/FileSync');
 const adapter = new FileSync(path.join(__dirname,'/../../history/','history.db'));
 const historyDB = lowDB(adapter);
 
+module.exports.validateModule = function(errs, nextValidateModuleCallback){
+    nextValidateModuleCallback();
+};
+
 // Set some defaults
 historyDB.defaults({ templates: [] }).write();
 

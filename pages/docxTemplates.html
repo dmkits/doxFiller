@@ -84,7 +84,7 @@
                     tr.appendChild(td=document.createElement("td"));
                     td.appendChild(div=document.createElement("div"));
                     div.appendChild(button=document.createElement("button"));
-                    button.setAttribute("id",pageID+"btnSendDataAndGenDocx");button.innerText="Сгенерировать документ";
+                    button.setAttribute("id",pageID+"btnSendDataAndGenDocx");button.innerText="Сгенерировать документы";
                     button=new Button({id:pageID+"btnSendDataAndGenDocx",style:"width:300px;"},pageID+"btnSendDataAndGenDocx");
                     button.onClick=contentPaneDetail.doGenerateTemplates;
                 };
@@ -106,7 +106,7 @@
                             style:"text-align:center"});
                     }
                     contentPaneDetail.doDialogSimpleTextBox({title:"Генерация документов по шаблонам",style:"min-width:350px;",
-                                contentStyle:"font-size:12px;",content:dialogContent,btnOkLabel:"Генерировать",btnCancelLabel:"Отмена"},
+                                contentStyle:"font-size:12px;",content:dialogContent,btnCheckAll:"Генерировать все",btnOkLabel:"Генерировать выбранные",btnCancelLabel:"Отмена"},
                             function(dialog, content){                                                          //console.log("content",content);
                                 var files;
                                 for(var item in content){
@@ -121,7 +121,7 @@
                 };
                 /**
                  * DMKITS 2016.02.29 v.1.1
-                 * @param params = {title, style, btnOkLabel, btnCancelLabel, contentStyle, content}
+                 * @param params = {title, style, btnOkLabel, btnCancelLabel, btnCheckAll, contentStyle, content}
                  * content = [{type:text/textbox/checkbox ,label, width, style, disabled, value, checked},{...},}, {...}, {...}, ...]
                  *  or content = {item1:{type:textbox ,label, width, disabled, value}, item2:{...}, item3:{...}, ...}
                  * on execute (click OK button) call onExecute(Dialog, content), content parameter contains value: content = {item1:{...,value}, ...}
@@ -201,6 +201,24 @@
                         }
                         onExecute(myDialog, content);
                     };
+                    if(params.btnCheckAll){
+                        if(!myDialog.btnCheckAll){
+                            var btnCheckAll=document.createElement("button");
+                            btnCheckAll.setAttribute("id","DialogSimpleTextBox_btnCheckAll");
+                            myDialog.actionBarNode.insertBefore(btnCheckAll,myDialog.actionBarNode.firstChild);
+                            myDialog.btnCheckAll=new Button({id:"DialogSimpleTextBox_btnCheckAll"},btnCheckAll);
+                        }
+                        myDialog.btnCheckAll.set("label",params.btnCheckAll);
+                        myDialog.btnCheckAll.onClick=function(){
+                            var content = params.content;
+                            for (var item in content) {
+                                var contentItem=content[item],contentType=contentItem.type;
+                                if (contentType=="textbox") contentItem.value = contentItem.textbox.value;
+                                else if (contentType=="checkbox") contentItem.checked = true;
+                            }
+                            onExecute(myDialog, content);
+                        };
+                    }
                     myDialog.show()
                 };
                 contentPaneDetail.startGenerateTemplates= function(files){
