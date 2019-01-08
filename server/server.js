@@ -1,11 +1,10 @@
 var startDateTime=new Date(), startTime=startDateTime.getTime();                                    console.log('STARTING at ',startDateTime );//test
 try{
     var ENV=process.env.NODE_ENV;                                                                   if(ENV=="development") console.log("START IN DEVELOPMENT MODE");
-    var common=require('./common'), appStartupParams = common.getStartupParams();                         console.log('Started with startup params:',appStartupParams);//test
+    var common=require('./common'), appStartupParams = common.getStartupParams();                   console.log('Started with startup params:',appStartupParams);//test
     var logDebug = (ENV=='development' || (appStartupParams && appStartupParams.logDebug));         if(logDebug) console.log("DEBUG LOG ON");
     module.exports.logDebug = logDebug;
-    var path = require('path'), fs = require('fs'), dateformat =require('dateformat'),
-        log = require('winston');
+    var path = require('path'), fs = require('fs');
 } catch(e){                                                                                         console.log("FAILED START! Reason: ", e.message);
     return;
 }
@@ -14,34 +13,10 @@ module.exports.getAppStartupParams = function(){
     return appStartupParams;
 };                                                                                                  console.log('Started with startup params:',appStartupParams);//test
 
-if (appStartupParams.logToConsole) {
-    log.configure({
-        transports: [
-            new (log.transports.Console)({ colorize: true,level:(logDebug)?'silly':'info', timestamp: function() {
-                return dateformat(Date.now(), "yyyy-mm-dd HH:MM:ss.l");
-            } })
-        ]
-    });
-} else {
-    var logDir= path.join(__dirname, '/../logs/');
-    try {
-        if (!fs.existsSync(logDir)) {
-            fs.mkdirSync(logDir);
-        }
-    }catch (e){                                                                                     console.log("FAILED START! Reason: Failed create log directory! Reason:"+ e.message);
-        return;
-    }
-    var transports  = [];
-    transports.push(new (require('winston-daily-rotate-file'))({
-        name: 'file',
-        datePattern: '.yyyy-MM-dd',
-        filename: path.join(logDir, "log_file.log")
-    }));
-    log = new log.Logger({transports: transports,level:(logDebug)?'silly':'info', timestamp: function() {
-        return dateformat(Date.now(), "yyyy-mm-dd HH:MM:ss.l");
-    }});
-}                                                                                                   log.info('STARTING at', startDateTime );//test
-module.exports.log=log;                                                                             log.info('Modules path, fs, dateformat, winston, util loaded' );//test
+var log=require('./log');
+if(!log) return;
+log.init(appStartupParams.logToConsole,logDebug);                                                   log.info('Module log loaded on ', new Date().getTime()-startTime );//test
+module.exports.log=log;
 
 var common=require('./common');
 var tempExcelRepDir=path.join(__dirname, '/../temp/');
@@ -85,6 +60,7 @@ try{
 }
 module.exports.getConfig=function(){ return config; };
 module.exports.getConfigModules=function(){ return (config&&config.modules)?config.modules:null; };
+module.exports.getConfigItem=function(itemName){ return (config&&config[itemName])?config[itemName]:null; };
 module.exports.getConfigTemplates=function(){ return (config&&config.templates)?config.templates:null; };
 
 server.use(function (req, res, next) {

@@ -10,5 +10,6 @@
       <excludeFolder url="file://$MODULE_DIR$/docxTemplates-test1" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="docxFiller.iprj node_modules" level="project" />
   </component>
 </module>

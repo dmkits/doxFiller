@@ -1,8 +1,8 @@
-var JSZip = require('jszip'), Docxtemplater = require('docxtemplater');
 var fs = require('fs'), path = require('path');
-var server= require("../server"), log= server.log;
+var server= require("../server"), log= server.log,
+    genDOCX=require("./genDOCX");
 
-global.appDocxTemplates= path.join(__dirname,'/../../docxTemplates/','');
+//global.appDocxTemplates= path.join(__dirname,'/../../docxTemplates/','');
 
 const lowDB = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync');
@@ -21,7 +21,7 @@ var getTemplateLastItemsByDate= function(tID, count){
     //console.log("filter=",historyDB.get('templates').filter(function(item){return item.id=tID}).sortBy('datetime').takeRight(100).value());
     //console.log("getTemplateLastItemsByDate map=",historyDB.get('templates').filter(function(item){return item.id=tID}).orderBy('datetime','desc').take(count).map('data').value());
     var resultSet=
-        historyDB.get('templates').filter(function(item){return item.id==tID}).orderBy('datetime','desc').take(count);     //console.log("getTemplateLastItemsByDate resultSet=",resultSet.value());
+        historyDB.get('templates').filter(function(item){return item.id==tID}).orderBy('datetime','desc').take(count);
     return resultSet.map(function(item){ item.data['datetime']=item.datetime; return item.data }).value();
 };
 
@@ -82,13 +82,13 @@ module.exports.init= function(app) {
             ];
             for(var tfID in tFields){
                 tTableParamsHistory.push({data:tfID, name:tfID, width:250, type:"text"});
-            }                                                                                       //console.log("getTemplateLastItemsByDate=",getTemplateLastItemsByDate(tID,2));
+            }
             res.send({columns:tTableParamsHistory,identifier:tTableParamsHistory[0].data,items:getTemplateLastItemsByDate(tID,100)});
             return;
         }
         res.send({error:"UNKNOWN URI action!"});
     });
-    app.post("/docxTemplates/*", function (req, res) {                                              //console.log("docxTemplates post data=",req.body);
+    app.post("/docxTemplates/*", function (req, res) {
         if(!req.params){
             res.send({error:"UNKNOWN URI!"});
             return;
@@ -102,7 +102,7 @@ module.exports.init= function(app) {
             res.send({error:"NO URI action!"});
             return;
         }
-        if(action=="sendDataAndGenDocx"){                                                           //console.log("sendDataAndGenDocx",req.body);
+        if(action=="sendDataAndGenDocx"){
             var tmpls=server.getConfigTemplates(), tmplData, tFields;
             if(tmpls)tmplData=tmpls[tID];
             if(!tmplData){
@@ -130,7 +130,7 @@ module.exports.init= function(app) {
             if(!req.body.files){
                 res.send({error:"NO files for generate template docx!",userErrorMsg:"Не указаны файлы шаблонов для генерации!"});
                 return;
-            }                                                                                       log.info("docxTemplates sendDataAndGenDocx values=",values," files=",req.body.files);
+            }                                                                                       log.debug("docxTemplates sendDataAndGenDocx values=",values," files=",req.body.files);
             var storeHistoryResult="SUCCESS";
             try{
                 storeHistory(tID,values);
@@ -139,56 +139,29 @@ module.exports.init= function(app) {
             }
             var files=req.body.files;
             if(typeof(files)=="string")files=[files];
-            generateDOCX(0,values,files,tmplData.directory,tmplData.outputPath,function(result){
-                if(!result) result={generateResult:true,userMsg:"Все документы по шаблонам успешно созданы!",storeHistoryResult:storeHistoryResult};
-                res.send(result);
-            });
+            var ramdomizeFileds=tmplData.ramdomizeFileds, ramdomizer=server.getConfigItem("ramdomizer");
+            if(ramdomizeFileds&&ramdomizer){
+                for (var rfKey in ramdomizeFileds) {
+                    var vKey=ramdomizeFileds[rfKey];
+                    if(vKey===undefined||vKey===null)continue;
+                    var val=values[vKey];
+                    if(val===undefined)continue;
+                    var newVal={text:val}; values[vKey+"@"]=newVal;
+                    if(ramdomizer.fonts)newVal.fontName=ramdomizer.fonts[Math.floor(Math.random() * ramdomizer.fonts.length)];
+                    if(ramdomizer.sizes)newVal.fontSize=ramdomizer.sizes[Math.floor(Math.random() * ramdomizer.sizes.length)];
+                }
+            }
+            genDOCX.generateDOCX(0,{values:values,files:files,directory:tmplData.directory,outputPath:tmplData.outputPath},
+                function(result){
+                    if(!result) result={generateResult:true,userMsg:"Все документы по шаблонам успешно созданы!",storeHistoryResult:storeHistoryResult};
+                    res.send(result);
+                });
             return;
         }
         res.send({error:"UNKNOWN URI action!"});
     });
 };
 
-function generateDOCX(ind,values,files,directory,outputPath,callback){
-    if(!files||!files[ind]){
-        callback(); return;
-    }
-    if(!values) {
-        callback({error:"No data for generate docx!",userErrorMsg:"Нет данных для создания документа по шаблону!"});
-        return;
-    }
-
-    var filename=files[ind], content;
-    try {//Load the docx file as a binary
-        content = fs.readFileSync(path.resolve(directory, filename), 'binary');
-    } catch (error) {
-        callback({error:"Failed load template docx file! Reason:"+error.message,
-            userErrorMsg:"Не удалось найти (загрузить для обработки) файл шаблона '"+filename+"'!"});
-        return;
-    }
-    var zip = new JSZip(content), doc = new Docxtemplater();
-    doc.loadZip(zip);
-    doc.setData(values);//set the templateVariables
-    try {// render the document (replace all occurences of {first_name} by John, {last_name} by Doe, ...)
-        doc.render()
-    } catch (error) {
-        var e = { message: error.message, name: error.name, stack: error.stack, properties: error.properties};  //console.log("generateDOCX error:",JSON.stringify({error: e}));
-        callback({error:"Failed replace all occurences in template! Reason:"+error.message,
-            userErrorMsg:"Не удалось обработать файл шаблона!"});
-        return;
-        // The error thrown here contains additional information when logged with JSON.stringify (it contains a property object).
-        //throw error;
-    }
-    var buf = doc.getZip().generate({type: 'nodebuffer'});
-    try {// buf is a nodejs buffer, you can either write it to a file or do anything else with it.
-        fs.writeFileSync(path.resolve(outputPath, filename), buf);
-    } catch (error) {
-        callback({error:"Failed store result docx file! Reason:"+error.message,
-            userErrorMsg:"Не удалось сохранить файл результата!"});
-        return;
-    }
-    generateDOCX(ind+1,values,files,directory,outputPath,callback);
-}
 function storeHistory(tID,data){
     var lastItems=getTemplateLastItemsByDate(tID,1);
     var lastItem;
