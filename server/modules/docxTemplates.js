@@ -2,24 +2,21 @@ var fs = require('fs'), path = require('path');
 var server= require("../server"), log= server.log,
     genDOCX=require("./genDOCX");
 
-//global.appDocxTemplates= path.join(__dirname,'/../../docxTemplates/','');
-
-const lowDB = require('lowdb');
-const FileSync = require('lowdb/adapters/FileSync');
-const adapter = new FileSync(path.join(__dirname,'/../../history/','history.db'));
-const historyDB = lowDB(adapter);
+const lowDB = require('lowdb'),
+    FileSync = require('lowdb/adapters/FileSync');
+const adapter = new FileSync(path.join(__dirname,'/../../history/','history.db')),
+    historyDB = lowDB(adapter);
 
 module.exports.validateModule = function(errs, nextValidateModuleCallback){
     nextValidateModuleCallback();
 };
 
-// Set some defaults
-historyDB.defaults({ templates: [] }).write();
+historyDB.defaults({ templates: [] }).write();// Set some defaults
 
 var getTemplateLastItemsByDate= function(tID, count){
-    //console.log("last=",historyDB.get('templates').findLast(function(item){return item.id=tID}).value());
-    //console.log("filter=",historyDB.get('templates').filter(function(item){return item.id=tID}).sortBy('datetime').takeRight(100).value());
-    //console.log("getTemplateLastItemsByDate map=",historyDB.get('templates').filter(function(item){return item.id=tID}).orderBy('datetime','desc').take(count).map('data').value());
+    //console.log("last=",historyDB.get('templates').findLast(function(item){return item.id=tID}).value());//IT'S FOR TEST
+    //console.log("filter=",historyDB.get('templates').filter(function(item){return item.id=tID}).sortBy('datetime').takeRight(100).value());//IT'S FOR TEST
+    //console.log("getTemplateLastItemsByDate map=",historyDB.get('templates').filter(function(item){return item.id=tID}).orderBy('datetime','desc').take(count).map('data').value());//IT'S FOR TEST
     var resultSet=
         historyDB.get('templates').filter(function(item){return item.id==tID}).orderBy('datetime','desc').take(count);
     return resultSet.map(function(item){ item.data['datetime']=item.datetime; return item.data }).value();
@@ -130,7 +127,7 @@ module.exports.init= function(app) {
             if(!req.body.files){
                 res.send({error:"NO files for generate template docx!",userErrorMsg:"Не указаны файлы шаблонов для генерации!"});
                 return;
-            }                                                                                       log.debug("docxTemplates sendDataAndGenDocx values=",values," files=",req.body.files);
+            }                                                                                       log.debug("docxTemplates sendDataAndGenDocx values=",values,"\nfiles=",req.body.files,{});
             var storeHistoryResult="SUCCESS";
             try{
                 storeHistory(tID,values);
@@ -141,14 +138,16 @@ module.exports.init= function(app) {
             if(typeof(files)=="string")files=[files];
             var ramdomizeFileds=tmplData.ramdomizeFileds, ramdomizer=server.getConfigItem("ramdomizer");
             if(ramdomizeFileds&&ramdomizer){
+                var randomFont=Math.floor(Math.random() * ramdomizer.fonts.length),
+                    randomFSize=Math.floor(Math.random() * ramdomizer.sizes.length);
                 for (var rfKey in ramdomizeFileds) {
                     var vKey=ramdomizeFileds[rfKey];
                     if(vKey===undefined||vKey===null)continue;
                     var val=values[vKey];
                     if(val===undefined)continue;
                     var newVal={text:val}; values[vKey+"@"]=newVal;
-                    if(ramdomizer.fonts)newVal.fontName=ramdomizer.fonts[Math.floor(Math.random() * ramdomizer.fonts.length)];
-                    if(ramdomizer.sizes)newVal.fontSize=ramdomizer.sizes[Math.floor(Math.random() * ramdomizer.sizes.length)];
+                    if(ramdomizer.fonts)newVal.fontName=ramdomizer.fonts[randomFont];
+                    if(ramdomizer.sizes)newVal.fontSize=ramdomizer.sizes[randomFSize];
                 }
             }
             genDOCX.generateDOCX(0,{values:values,files:files,directory:tmplData.directory,outputPath:tmplData.outputPath},

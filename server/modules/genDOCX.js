@@ -31,7 +31,7 @@ var log= require("../log");
  *          <w:t>REPLACE WITH FONT Calibri 40</w:t>
  *      </w:r>
  */
-var generateDOCX= function(ind,params,callback){                                                            log.debug("genDOCX generateDOCX START:",ind,params.files,{});
+var generateDOCX= function(ind,params,callback){                                                            //log.debug("genDOCX generateDOCX START:",ind,params.files,{});
     if(!params){
         callback({error:"No parameters for generate docx!",userErrorMsg:"Нет данных для создания документа по шаблону!"}); return;
     }
@@ -61,7 +61,7 @@ var generateDOCX= function(ind,params,callback){                                
             }
             if(text)params.values[vKey]+=text;
             params.values[vKey]+='</w:r>'
-        }                                                                                                   log.debug("genDOCX generateDOCX originalValues:",params.originalValues,params.values);
+        }                                                                                                   log.debug("genDOCX generateDOCX originalValues:",params.originalValues,"\nvalues:",params.values,{});
     }
     var filename=params.files[ind], content;                                                                log.debug("genDOCX generateDOCX START filename=",filename);
     try {//Load the docx file as a binary
@@ -74,7 +74,7 @@ var generateDOCX= function(ind,params,callback){                                
     var zip = new JSZip(content), doc = new Docxtemplater();
     doc.loadZip(zip);
     doc.setData(params.values);//set the templateVariables
-    try {/* render the document (replace all occurences of {<pName>} by values)*/                           log.debug("genDOCX generateDOCX doc.fileTypeConfig.tagRawXml",doc.fileTypeConfig.tagRawXml,{});
+    try {/* render the document (replace all occurences of {<pName>} by values)*/                           //log.debug("genDOCX generateDOCX doc.fileTypeConfig.tagRawXml",doc.fileTypeConfig.tagRawXml,{});
         doc.fileTypeConfig.tagRawXml="w:r";/*replace standard 'w:p' to 'w:r'*/                              //console.log("doc.modules[3]",doc.modules[3].fileTypeConfig,{});
         doc.render();                                                                                       //console.log("genDOCX generateDOCX doc",doc,{});
     } catch (error) {
